@@ -14,6 +14,7 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('dexfund')
     .build();
+
   app.setGlobalPrefix('api', { exclude: ['healthcheck'] });
 
   const document = SwaggerModule.createDocument(app, config);
