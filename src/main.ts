@@ -16,6 +16,7 @@ async function bootstrap() {
     .build();
 
   app.setGlobalPrefix('api', { exclude: ['metrics', 'healthcheck'] });
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
 
