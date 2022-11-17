@@ -1,4 +1,4 @@
-import { logType } from './../utility/enums';
+import { LogType } from '../../shared/utility/enums';
 import * as winston from 'winston';
 import { utilities as nestWinstonModuleUtilities } from 'nest-winston/dist/winston.utilities';
 
@@ -19,15 +19,15 @@ const winstonConfig = {
     }),
     new winston.transports.File({
       filename: 'log/warn.log',
-      level: logType.WARN,
+      level: LogType.WARN,
     }),
     new winston.transports.File({
       filename: 'log/error.log',
-      level: logType.ERROR,
+      level: LogType.ERROR,
     }),
     new winston.transports.File({
       filename: 'log/info.log',
-      level: logType.INFO,
+      level: LogType.INFO,
     }),
   ],
 };

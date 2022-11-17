@@ -1,5 +1,5 @@
-export enum logType {
-  INFO = 'info',
+export enum LogType {
   ERROR = 'error',
   WARN = 'warn',
+  INFO = 'info',
 }

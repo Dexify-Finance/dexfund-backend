@@ -1,4 +1,4 @@
-import { ALLOW_LOG } from './../utility/logger-constants';
+import { ALLOW_LOG } from './utility/logger-constants';
 import { Injectable, Inject, LoggerService } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import * as fs from 'fs';

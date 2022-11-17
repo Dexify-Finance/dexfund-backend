@@ -1,4 +1,6 @@
-import { logType } from './../shared/utility/enums';
+import { AuthGuard } from './../shared/guards/auth.guard';
+import { User } from './entities/user.entity';
+import { LogType } from './../shared/utility/enums';
 import {
   Controller,
   Get,
@@ -7,12 +9,14 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { LoggingService } from 'src/shared/logger/logging.service';
+import { LoggingService } from 'src/logger/logging.service';
 
+@UseGuards(AuthGuard)
 @Controller('user')
 export class UserController {
   constructor(
@@ -21,14 +25,13 @@ export class UserController {
   ) {}
 
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    this.logger.log({ type: logType.ERROR, message: 'this is error' });
-    return this.userService.create(createUserDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.userService.findAll();
+  getOrCreateUser(@Body() createUserDto: CreateUserDto): Promise<User> {
+    this.logger.log({
+      type: LogType.WARN,
+      location: UserController.name,
+      message: 'getOrCreateUser calling',
+    });
+    return this.userService.getOrCreateUser(createUserDto);
   }
 
   @Get(':id')
@@ -37,12 +40,12 @@ export class UserController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(+id, updateUserDto);
+  update(@Param('id') address: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.userService.update(address, updateUserDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.remove(+id);
+  remove(@Param('id') address: string) {
+    return this.userService.remove(address);
   }
 }
