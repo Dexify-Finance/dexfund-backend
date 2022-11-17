@@ -6,7 +6,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ethers } from 'ethers';
-import { SECRET_MESSAGE } from '../utility/wallet-constants';
 
 @Injectable()
 export class WalletService {
@@ -14,7 +13,7 @@ export class WalletService {
 
   verifyRequest(request: any) {
     const signerAddr = ethers.utils.verifyMessage(
-      SECRET_MESSAGE,
+      request.address,
       request.signature,
     );
     if (signerAddr !== request.address) {
