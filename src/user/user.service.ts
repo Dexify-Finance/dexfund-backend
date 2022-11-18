@@ -4,7 +4,6 @@ import { LogType } from './../shared/utility/enums';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { LoggingService } from '../logger/logging.service';
 import { Repository } from 'typeorm';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -19,8 +18,9 @@ export class UserService {
     private readonly bucketService: BucketService,
   ) {}
 
-  async getOrCreateUser(createUserDto: CreateUserDto) {
-    const user = await this.findOneUserByAddress(createUserDto.address);
+  async getUser(address: string, signature: string) {
+    this.walletService.verifySigner(address, signature);
+    const user = await this.findOneUserByAddress(address);
     if (user) {
       this.logger.log({
         type: LogType.INFO,
@@ -33,35 +33,36 @@ export class UserService {
       type: LogType.WARN,
       message: 'User not found',
     });
-    return this.createNewUser(createUserDto.address);
+    return {};
   }
 
   async update(updateUserDto: UpdateUserDto, file: Express.Multer.File) {
-    try {
-      let imageUrl: string;
-      if (file) {
-        imageUrl = await this.uploadImageToS3(file);
-      }
-      delete updateUserDto.signature;
+    this.walletService.verifySigner(
+      updateUserDto.address,
+      updateUserDto.signature,
+    );
+    let imageUrl: string;
+    if (file) {
+      imageUrl = await this.uploadImageToS3(file);
+    }
+    delete updateUserDto.signature;
+    delete updateUserDto.file;
+    const user = await this.findOneUserByAddress(updateUserDto.address);
+    if (user) {
       await this.userRepository.update(
         {
           address: updateUserDto.address,
         },
-        { ...updateUserDto, image: imageUrl },
+        { ...updateUserDto, image: imageUrl ?? '' },
       );
 
       return this.findOneUserByAddress(updateUserDto.address);
-    } catch (error) {
-      this.logger.log({
-        type: LogType.WARN,
-        message: 'User not found with error' + error,
-      });
-      throw new InternalServerErrorException('User was not found');
     }
+    return this.createNewUser({ ...updateUserDto, image: imageUrl ?? '' });
   }
 
-  private async createNewUser(address: string) {
-    return await this.userRepository.save({ address });
+  private async createNewUser(data: any): Promise<User> {
+    return await this.userRepository.save(data);
   }
 
   private async findOneUserByAddress(address: string) {

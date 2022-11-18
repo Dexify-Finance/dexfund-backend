@@ -17,6 +17,7 @@ export class ImageValidationPipe implements PipeTransform<Express.Multer.File> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _metadata: ArgumentMetadata,
   ) {
+    if (!data) return;
     if (this.isInstanceOfFile(data)) {
       this.validateFile(data);
     } else {
