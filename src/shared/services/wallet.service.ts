@@ -19,7 +19,6 @@ export class WalletService {
     if (signerAddr !== request.address) {
       this.logger.log({
         type: LogType.ERROR,
-        location: WalletService.name,
         message: 'No token provided for auth request',
       });
 
@@ -36,7 +35,6 @@ export class WalletService {
 
     this.logger.log({
       type: LogType.ERROR,
-      location: WalletService.name,
       message: 'The wallet type for your Ethereum address is invalid.',
     });
     throw new BadRequestException('Invalid Wallet Address');

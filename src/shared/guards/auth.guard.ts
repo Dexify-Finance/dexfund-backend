@@ -20,7 +20,6 @@ export class AuthGuard implements CanActivate {
     if (!request.body.signature || !request.body.address) {
       this.logger.log({
         type: LogType.ERROR,
-        location: AuthGuard.name,
         message: 'No token provided for auth request',
       });
 

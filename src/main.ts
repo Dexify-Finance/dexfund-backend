@@ -9,6 +9,8 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe());
 
+  app.enableCors();
+
   const config = new DocumentBuilder()
     .setTitle('Dexfund Backend')
     .setDescription('The dexfund API description')

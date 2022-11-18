@@ -1,6 +1,7 @@
+import { BucketService } from './../shared/services/bucket.service';
 import { WalletService } from './../shared/services/wallet.service';
 import { LogType } from './../shared/utility/enums';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { LoggingService } from '../logger/logging.service';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -15,28 +16,47 @@ export class UserService {
     private userRepository: Repository<User>,
     private logger: LoggingService,
     private readonly walletService: WalletService,
+    private readonly bucketService: BucketService,
   ) {}
 
   async getOrCreateUser(createUserDto: CreateUserDto) {
-    this.walletService.veryfyAddress(createUserDto.address);
-    const user = await this.userRepository.findOneBy({
-      address: createUserDto.address,
-    });
-
+    const user = await this.findOneUserByAddress(createUserDto.address);
     if (user) {
       this.logger.log({
         type: LogType.INFO,
-        location: UserService.name,
         message: `User found: address is ${user.address}`,
       });
       return user;
-    } else {
+    }
+
+    this.logger.log({
+      type: LogType.WARN,
+      message: 'User not found',
+    });
+    return this.createNewUser(createUserDto.address);
+  }
+
+  async update(updateUserDto: UpdateUserDto, file: Express.Multer.File) {
+    try {
+      let imageUrl: string;
+      if (file) {
+        imageUrl = await this.uploadImageToS3(file);
+      }
+      delete updateUserDto.signature;
+      await this.userRepository.update(
+        {
+          address: updateUserDto.address,
+        },
+        { ...updateUserDto, image: imageUrl },
+      );
+
+      return this.findOneUserByAddress(updateUserDto.address);
+    } catch (error) {
       this.logger.log({
         type: LogType.WARN,
-        location: UserService.name,
-        message: 'User not found',
+        message: 'User not found with error' + error,
       });
-      return this.createNewUser(createUserDto.address);
+      throw new InternalServerErrorException('User was not found');
     }
   }
 
@@ -44,15 +64,27 @@ export class UserService {
     return await this.userRepository.save({ address });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  private async findOneUserByAddress(address: string) {
+    this.walletService.veryfyAddress(address);
+    return await this.userRepository.findOneBy({ address });
   }
 
-  update(address: string, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${address} user`;
-  }
+  private async uploadImageToS3(file: Express.Multer.File) {
+    try {
+      const extension = file.originalname.split('.').pop();
+      const filePath = `avatar-${Date.now().toString()}.${extension}`;
+      const fileUrl = await this.bucketService.putObject({
+        path: filePath,
+        file,
+      });
+      return fileUrl;
+    } catch (err) {
+      this.logger.log({
+        type: LogType.ERROR,
+        message: `Failed to upload media [${file.originalname}], size: [${file.size}] to s3`,
+      });
 
-  remove(address: string) {
-    return `This action removes a #${address} user`;
+      throw new InternalServerErrorException('Failed to upload image');
+    }
   }
 }
