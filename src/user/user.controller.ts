@@ -1,51 +1,38 @@
-import { AuthGuard } from './../shared/guards/auth.guard';
 import { User } from './entities/user.entity';
-import { LogType } from './../shared/utility/enums';
+import { ImageValidationPipe } from './pipes/file-type.pipe';
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Patch,
-  Param,
-  Delete,
-  UseGuards,
+  UploadedFile,
+  UseInterceptors,
+  Get,
+  Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { LoggingService } from 'src/logger/logging.service';
+import { ApiConsumes } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 
-@UseGuards(AuthGuard)
 @Controller('user')
 export class UserController {
-  constructor(
-    private readonly userService: UserService,
-    private readonly logger: LoggingService,
-  ) {}
+  constructor(private readonly userService: UserService) {}
+
+  @Get()
+  getUser(
+    @Query('address') address: string,
+    @Query('signature') signature: string,
+  ) {
+    return this.userService.getUser(address, signature);
+  }
 
   @Post()
-  getOrCreateUser(@Body() createUserDto: CreateUserDto): Promise<User> {
-    this.logger.log({
-      type: LogType.WARN,
-      location: UserController.name,
-      message: 'getOrCreateUser calling',
-    });
-    return this.userService.getOrCreateUser(createUserDto);
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.userService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') address: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(address, updateUserDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') address: string) {
-    return this.userService.remove(address);
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file'))
+  update(
+    @Body() updateUserDto: UpdateUserDto,
+    @UploadedFile(ImageValidationPipe) file?: Express.Multer.File,
+  ): Promise<User> {
+    return this.userService.update(updateUserDto, file);
   }
 }

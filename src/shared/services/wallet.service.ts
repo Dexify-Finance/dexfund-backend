@@ -11,15 +11,23 @@ import { ethers } from 'ethers';
 export class WalletService {
   constructor(private readonly logger: LoggingService) {}
 
-  verifyRequest(request: any) {
-    const signerAddr = ethers.utils.verifyMessage(
-      request.address,
-      request.signature,
-    );
-    if (signerAddr !== request.address) {
+  verifySigner(address: string, signature: string) {
+    if (!signature || !address) {
       this.logger.log({
         type: LogType.ERROR,
-        location: WalletService.name,
+        message: 'No token provided for auth request',
+      });
+
+      throw new UnauthorizedException({
+        message: 'No auth token provided',
+        code: 'Invalid signature',
+      });
+    }
+
+    const signerAddr = ethers.utils.verifyMessage(address, signature);
+    if (signerAddr !== address) {
+      this.logger.log({
+        type: LogType.ERROR,
         message: 'No token provided for auth request',
       });
 
@@ -36,7 +44,6 @@ export class WalletService {
 
     this.logger.log({
       type: LogType.ERROR,
-      location: WalletService.name,
       message: 'The wallet type for your Ethereum address is invalid.',
     });
     throw new BadRequestException('Invalid Wallet Address');

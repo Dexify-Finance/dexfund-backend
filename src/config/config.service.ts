@@ -8,6 +8,10 @@ export interface Config {
   DB_USER: string;
   DB_PASSWORD: string;
   DB_NAME: string;
+  AWS_REGION: string;
+  AWS_S3_BUCKET: string;
+  IAM_USER_ACCESS_KEY: string;
+  IAM_USER_SECRET_KEY: string;
 }
 
 export enum NodeEnv {
@@ -35,6 +39,10 @@ export class ConfigService {
       DB_NAME: this.getRequired('DB_NAME'),
       DB_USER: this.getRequired('DB_USER'),
       DB_PASSWORD: this.getRequired('DB_PASSWORD'),
+      AWS_REGION: this.getRequired('AWS_REGION'),
+      AWS_S3_BUCKET: this.getRequired('AWS_S3_BUCKET'),
+      IAM_USER_ACCESS_KEY: this.getRequired('IAM_USER_ACCESS_KEY'),
+      IAM_USER_SECRET_KEY: this.getRequired('IAM_USER_SECRET_KEY'),
     };
   }
 
