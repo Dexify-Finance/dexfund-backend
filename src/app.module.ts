@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { UserModule } from './user/user.module';
+import { TwitterModule } from './twitter/twitter.module';
 import winstonConfig from './logger/utility/winston-config';
 
 @Module({
@@ -13,6 +14,7 @@ import winstonConfig from './logger/utility/winston-config';
     DatabaseModule,
     WinstonModule.forRoot(winstonConfig),
     UserModule,
+    TwitterModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,12 +1,14 @@
+import { LoggingService } from './../logger/logging.service';
+import { LoggingModule } from './../logger/logging.module';
 import { ConfigModule } from './../config/config.module';
 import { BucketService } from './services/bucket.service';
-import { LoggingService } from './../logger/logging.service';
 import { WalletService } from './services/wallet.service';
 import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
-  imports: [ConfigModule],
-  providers: [WalletService, LoggingService, BucketService],
-  exports: [WalletService, BucketService],
+  imports: [ConfigModule, HttpModule, LoggingModule],
+  providers: [WalletService, BucketService, LoggingService],
+  exports: [WalletService, BucketService, LoggingService],
 })
 export class SharedModule {}

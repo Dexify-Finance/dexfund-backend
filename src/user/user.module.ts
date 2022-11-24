@@ -4,10 +4,9 @@ import { SharedModule } from './../shared/shared.module';
 import { Module } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
-import { LoggingModule } from 'src/logger/logging.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User]), LoggingModule, SharedModule],
+  imports: [TypeOrmModule.forFeature([User]), SharedModule],
   controllers: [UserController],
   providers: [UserService],
 })

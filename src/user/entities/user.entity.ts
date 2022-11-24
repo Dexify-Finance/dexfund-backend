@@ -1,8 +1,8 @@
+import { ADDRESS_LENGTH } from './../../utils/constants';
 import {
   MAX_NAME_LENGTH,
   MAX_BIO_LENGTH,
   MAX_TITLE_LENGTH,
-  ADDRESS_LENGTH,
 } from './../utility/user-constants';
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
