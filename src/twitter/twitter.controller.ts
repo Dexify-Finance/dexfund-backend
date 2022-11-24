@@ -19,7 +19,7 @@ export class TwitterController {
   }
 
   @Get('tweets')
-  getRecentTweets(@Query('fundAddress') fundAddress: string) {
+  getRecentTweets(@Query('fundAddress') fundAddress: string): Promise<any> {
     return this.twitterService.getRecentTweetsByFundAddress(fundAddress);
   }
 }

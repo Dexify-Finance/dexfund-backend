@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateTwitterDto } from './dto/create-twitter.dto';
 import { Twitter } from './entities/twitter.entity';
-import { needle } from 'needle';
+import * as needle from 'needle';
 
 @Injectable()
 export class TwitterService {
@@ -47,11 +47,11 @@ export class TwitterService {
     return this.createNewTwitterUser(createTwitterDto);
   }
 
-  async getRecentTweetsByFundAddress(fundAddress: string) {
+  async getRecentTweetsByFundAddress(fundAddress: string): Promise<any> {
     const twitterUser = await this.findOneTwitterUserByFundAddress(fundAddress);
 
     const params = {
-      query: `from:${twitterUser.twitterScreenName} -is:retweet`,
+      query: `from:${twitterUser.twitterName} -is:retweet`,
       'tweet.fields': 'author_id',
     };
 
