@@ -12,6 +12,8 @@ export interface Config {
   AWS_S3_BUCKET: string;
   IAM_USER_ACCESS_KEY: string;
   IAM_USER_SECRET_KEY: string;
+  TWITTER_API_BEARER_TOKEN: string;
+  TWITTER_ENDPOINT_URL: string;
 }
 
 export enum NodeEnv {
@@ -43,6 +45,8 @@ export class ConfigService {
       AWS_S3_BUCKET: this.getRequired('AWS_S3_BUCKET'),
       IAM_USER_ACCESS_KEY: this.getRequired('IAM_USER_ACCESS_KEY'),
       IAM_USER_SECRET_KEY: this.getRequired('IAM_USER_SECRET_KEY'),
+      TWITTER_API_BEARER_TOKEN: this.getRequired('TWITTER_API_BEARER_TOKEN'),
+      TWITTER_ENDPOINT_URL: this.getRequired('TWITTER_ENDPOINT_URL'),
     };
   }
 

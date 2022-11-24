@@ -1,8 +1,9 @@
+import { ADDRESS_LENGTH } from './../../utils/constants';
 import { MAX_BIO_LENGTH, MAX_NAME_LENGTH } from './../utility/user-constants';
 import { IsNotEmpty, MaxLength } from 'class-validator';
 import { Expose } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { ADDRESS_LENGTH, MAX_TITLE_LENGTH } from '../utility/user-constants';
+import { MAX_TITLE_LENGTH } from '../utility/user-constants';
 export class UpdateUserDto {
   @ApiProperty()
   @Expose()

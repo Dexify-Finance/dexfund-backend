@@ -36,7 +36,10 @@ export class UserService {
     return {};
   }
 
-  async update(updateUserDto: UpdateUserDto, file: Express.Multer.File) {
+  async createOrUpdate(
+    updateUserDto: UpdateUserDto,
+    file: Express.Multer.File,
+  ) {
     this.walletService.verifySigner(
       updateUserDto.address,
       updateUserDto.signature,
@@ -66,7 +69,7 @@ export class UserService {
   }
 
   private async findOneUserByAddress(address: string) {
-    this.walletService.veryfyAddress(address);
+    this.walletService.verifyAddress(address);
     return await this.userRepository.findOneBy({ address });
   }
 

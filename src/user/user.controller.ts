@@ -11,9 +11,9 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ApiConsumes } from '@nestjs/swagger';
+import { ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-
+@ApiTags('User')
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -29,10 +29,10 @@ export class UserController {
   @Post()
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('file'))
-  update(
+  createOrUpdate(
     @Body() updateUserDto: UpdateUserDto,
     @UploadedFile(ImageValidationPipe) file?: Express.Multer.File,
   ): Promise<User> {
-    return this.userService.update(updateUserDto, file);
+    return this.userService.createOrUpdate(updateUserDto, file);
   }
 }

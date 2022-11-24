@@ -2,7 +2,7 @@ import {
   checkFileExtensionIsAllowedImage,
   allowedImageExtensions,
   checkFileIsImage,
-} from './../utility/file-type-check';
+} from '../../utils/file-type-check';
 import {
   ArgumentMetadata,
   BadRequestException,

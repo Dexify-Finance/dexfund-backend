@@ -39,13 +39,13 @@ export class WalletService {
     return true;
   }
 
-  veryfyAddress(address: string) {
+  verifyAddress(address: string) {
     if (ethers.utils.isAddress(address)) return;
 
     this.logger.log({
       type: LogType.ERROR,
-      message: 'The wallet type for your Ethereum address is invalid.',
+      message: 'The address type is invalid.',
     });
-    throw new BadRequestException('Invalid Wallet Address');
+    throw new BadRequestException('Invalid Address');
   }
 }
