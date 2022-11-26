@@ -4,7 +4,7 @@ import { ConfigService } from './../config/config.service';
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { Price } from './entities/price.entity';
 import { LogType } from 'src/shared/utility/enums';
 import { Worker } from 'worker_threads';
@@ -46,16 +46,12 @@ export class PriceLoggingService {
 
   async savePrice(prices: any, coinList: Currency[]) {
     try {
-      const timeId = Math.floor(
-        Date.now() / this.config.BNB_PRICE_TIME_INTERVAL,
-      );
       const queryValue = [];
       Object.values(coinList).forEach((item) => {
         queryValue.push({
           currency: item.id,
-          price: prices[item.name].usd,
+          price: prices[item.name]?.usd,
           timeStamp: Date.now(),
-          timeId,
         });
       });
       await this.priceRepository
@@ -76,14 +72,15 @@ export class PriceLoggingService {
     }
   }
 
-  async getCurrentPrice(id: string, timeStamp: number) {
-    const timeId = Math.floor(timeStamp / this.config.BNB_PRICE_TIME_INTERVAL);
+  async getCurrentPrice(id: string) {
     return await this.priceRepository.findOne({
       where: {
-        timeId,
         currency: {
           name: id,
         },
+      },
+      order: {
+        timeStamp: 'DESC',
       },
       relations: {
         currency: true,
@@ -91,30 +88,38 @@ export class PriceLoggingService {
     });
   }
 
-  async getPriceHistory(ids: string, startDate: number, endDate: number) {
-    endDate = Date.now() - endDate < 0 ? Date.now() : endDate;
-    const offset = Math.floor(
-      (Date.now() - endDate) / this.config.BNB_PRICE_TIME_INTERVAL,
-    );
-    const limit = Math.floor(
-      (endDate - startDate) / this.config.BNB_PRICE_TIME_INTERVAL,
-    );
-    console.log(offset);
+  async getPriceHistory(
+    ids: string,
+    startDate: number,
+    endDate: number,
+    interval: number,
+  ) {
+    const dataCnt = Math.floor((endDate - startDate) / interval + 1);
+    const chunk = Math.floor(interval / this.config.BNB_PRICE_TIME_INTERVAL);
     const result = {};
     const coinList = ids.split(',');
-    for (const key in coinList) {
-      result[coinList[key]] = await this.priceRepository.find({
+    for (const val of coinList) {
+      const priceArray = await this.priceRepository.find({
         relations: {
           currency: true,
         },
         where: {
           currency: {
-            name: coinList[key],
+            name: val,
           },
+          timeStamp: Between(
+            startDate - this.config.BNB_PRICE_TIME_INTERVAL,
+            endDate,
+          ),
         },
-        skip: offset,
-        take: limit,
       });
+      let i = 0;
+      const data = [];
+      while (i < dataCnt) {
+        data.push(priceArray[i + chunk]);
+        i++;
+      }
+      result[val] = data;
     }
     return result;
   }
