@@ -18,22 +18,22 @@ export class UserService {
     private readonly bucketService: BucketService,
   ) {}
 
-  async getUser(address: string, signature: string) {
-    this.walletService.verifySigner(address, signature);
+  async getUser(address: string, signature?: string) {
+    if (signature) this.walletService.verifySigner(address, signature);
     const user = await this.findOneUserByAddress(address);
-    if (user) {
+    if (!user) {
       this.logger.log({
-        type: LogType.INFO,
-        message: `User found: address is ${user.address}`,
+        type: LogType.WARN,
+        message: 'User not found',
       });
-      return user;
+      return {};
     }
-
     this.logger.log({
-      type: LogType.WARN,
-      message: 'User not found',
+      type: LogType.INFO,
+      message: `User found: address is ${user.address}`,
     });
-    return {};
+    if (signature) return user;
+    return user.image;
   }
 
   async createOrUpdate(

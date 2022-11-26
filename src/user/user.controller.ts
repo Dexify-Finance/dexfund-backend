@@ -21,7 +21,8 @@ export class UserController {
   @Get()
   getUser(
     @Query('address') address: string,
-    @Query('signature') signature: string,
+    @Query('signature')
+    signature?: string,
   ) {
     return this.userService.getUser(address, signature);
   }
