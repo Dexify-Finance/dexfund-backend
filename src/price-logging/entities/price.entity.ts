@@ -12,9 +12,6 @@ export class Price {
   @Column({ nullable: true })
   price: string;
 
-  @Column({ nullable: false })
-  timeStamp: string;
-
-  @Column({ nullable: false })
-  timeId: number;
+  @Column({ nullable: false, type: 'bigint' })
+  timeStamp: number;
 }

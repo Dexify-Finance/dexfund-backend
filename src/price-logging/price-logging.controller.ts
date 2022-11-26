@@ -9,11 +9,8 @@ export class PriceLoggingController {
   constructor(private readonly priceLoggingService: PriceLoggingService) {}
 
   @Get()
-  getCurrentPrice(
-    @Query('id') id: string,
-    @Query('timeStamp') timeStamp: number,
-  ): Promise<Price> {
-    return this.priceLoggingService.getCurrentPrice(id, timeStamp);
+  getCurrentPrice(@Query('id') id: string): Promise<Price> {
+    return this.priceLoggingService.getCurrentPrice(id);
   }
 
   @Get('history')
@@ -21,7 +18,13 @@ export class PriceLoggingController {
     @Query('ids') ids: string,
     @Query('startDate') startDate: number,
     @Query('endDate') endDate: number,
+    @Query('interval') interval: number,
   ) {
-    return this.priceLoggingService.getPriceHistory(ids, startDate, endDate);
+    return this.priceLoggingService.getPriceHistory(
+      ids,
+      startDate,
+      endDate,
+      interval,
+    );
   }
 }
