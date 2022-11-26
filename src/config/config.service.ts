@@ -14,6 +14,8 @@ export interface Config {
   IAM_USER_SECRET_KEY: string;
   TWITTER_API_BEARER_TOKEN: string;
   TWITTER_ENDPOINT_URL: string;
+  BNB_PRICE_TIME_INTERVAL: number;
+  BNB_PRICE_URL: string;
 }
 
 export enum NodeEnv {
@@ -47,6 +49,10 @@ export class ConfigService {
       IAM_USER_SECRET_KEY: this.getRequired('IAM_USER_SECRET_KEY'),
       TWITTER_API_BEARER_TOKEN: this.getRequired('TWITTER_API_BEARER_TOKEN'),
       TWITTER_ENDPOINT_URL: this.getRequired('TWITTER_ENDPOINT_URL'),
+      BNB_PRICE_TIME_INTERVAL: this.configService.get<number>(
+        'BNB_PRICE_TIME_INTERVAL',
+      ),
+      BNB_PRICE_URL: this.getRequired('BNB_PRICE_URL'),
     };
   }
 
