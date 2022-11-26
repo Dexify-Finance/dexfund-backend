@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Price } from './entities/price.entity';
 import { LogType } from 'src/shared/utility/enums';
-import * as needle from 'needle';
+import { Worker } from 'worker_threads';
 
 @Injectable()
 export class PriceLoggingService {
@@ -21,15 +21,31 @@ export class PriceLoggingService {
   ) {}
   config = this.configService.getConfig();
 
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_30_SECONDS)
   async handleCron() {
-    await this.savePrice();
+    const coinList = await this.currencyRepository.find();
+    const worker = new Worker(__dirname + '/worker.js', {
+      workerData: coinList,
+    });
+    worker.on('message', (message) => {
+      this.savePrice(message, coinList);
+    });
+    worker.on('error', (e) => {
+      this.logger.log({
+        type: LogType.ERROR,
+        message: 'Error in Worker' + e,
+      });
+    });
+    worker.on('exit', (code) => {
+      this.logger.log({
+        type: LogType.WARN,
+        message: 'Worker terminated with code: ' + code,
+      });
+    });
   }
 
-  async savePrice() {
+  async savePrice(prices: any, coinList: Currency[]) {
     try {
-      const coinList = await this.currencyRepository.find();
-      const prices = await this.fetchCoinPrices(coinList);
       const timeId = Math.floor(
         Date.now() / this.config.BNB_PRICE_TIME_INTERVAL,
       );
@@ -38,6 +54,7 @@ export class PriceLoggingService {
         queryValue.push({
           currency: item.id,
           price: prices[item.name].usd,
+          timeStamp: Date.now(),
           timeId,
         });
       });
@@ -59,35 +76,46 @@ export class PriceLoggingService {
     }
   }
 
-  private async fetchCoinPrices(coinList: Currency[]) {
-    try {
-      let idList = '';
-      Object.values(coinList).forEach((item) => {
-        idList += `${item.name},`;
-      });
-      console.log(this.config.BNB_PRICE_URL);
-      const { body } = await needle(
-        'get',
-        this.config.BNB_PRICE_URL,
-        {
-          ids: idList,
-          vs_currencies: 'usd',
-        },
-        {},
-      );
-      return body;
-    } catch (error) {
-      this.logger.log({
-        type: LogType.ERROR,
-        message: 'Failed to fetch coin prices from CoinGecko with ' + error,
-      });
-      return {};
-    }
-  }
-
   async getCurrentPrice(id: string, timeStamp: number) {
     const timeId = Math.floor(timeStamp / this.config.BNB_PRICE_TIME_INTERVAL);
-    const loggedPrice = await this.priceRepository.findOneBy({ timeId });
-    return loggedPrice;
+    return await this.priceRepository.findOne({
+      where: {
+        timeId,
+        currency: {
+          name: id,
+        },
+      },
+      relations: {
+        currency: true,
+      },
+    });
+  }
+
+  async getPriceHistory(ids: string, startDate: number, endDate: number) {
+    endDate = Date.now() - endDate < 0 ? Date.now() : endDate;
+    const offset = Math.floor(
+      (Date.now() - endDate) / this.config.BNB_PRICE_TIME_INTERVAL,
+    );
+    const limit = Math.floor(
+      (endDate - startDate) / this.config.BNB_PRICE_TIME_INTERVAL,
+    );
+    console.log(offset);
+    const result = {};
+    const coinList = ids.split(',');
+    for (const key in coinList) {
+      result[coinList[key]] = await this.priceRepository.find({
+        relations: {
+          currency: true,
+        },
+        where: {
+          currency: {
+            name: coinList[key],
+          },
+        },
+        skip: offset,
+        take: limit,
+      });
+    }
+    return result;
   }
 }

@@ -13,5 +13,8 @@ export class Price {
   price: string;
 
   @Column({ nullable: false })
+  timeStamp: string;
+
+  @Column({ nullable: false })
   timeId: number;
 }

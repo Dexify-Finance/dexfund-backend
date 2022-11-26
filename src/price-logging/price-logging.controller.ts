@@ -15,4 +15,13 @@ export class PriceLoggingController {
   ): Promise<Price> {
     return this.priceLoggingService.getCurrentPrice(id, timeStamp);
   }
+
+  @Get('history')
+  getPriceHistory(
+    @Query('ids') ids: string,
+    @Query('startDate') startDate: number,
+    @Query('endDate') endDate: number,
+  ) {
+    return this.priceLoggingService.getPriceHistory(ids, startDate, endDate);
+  }
 }
