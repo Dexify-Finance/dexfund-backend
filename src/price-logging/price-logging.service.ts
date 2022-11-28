@@ -16,8 +16,8 @@ export class PriceLoggingService {
     private priceRepository: Repository<Price>,
     @InjectRepository(Currency)
     private currencyRepository: Repository<Currency>,
-    private configService: ConfigService,
-    private logger: LoggingService,
+    private readonly configService: ConfigService,
+    private readonly logger: LoggingService,
   ) {}
   config = this.configService.getConfig();
 
