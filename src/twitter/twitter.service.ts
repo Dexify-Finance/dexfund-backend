@@ -7,7 +7,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateTwitterDto } from './dto/create-twitter.dto';
 import { Twitter } from './entities/twitter.entity';
-import * as needle from 'needle';
+import { catchError, lastValueFrom } from 'rxjs';
+import { HttpService } from '@nestjs/axios';
+import { AxiosError } from 'axios';
 
 @Injectable()
 export class TwitterService {
@@ -16,7 +18,8 @@ export class TwitterService {
     private twitterRepository: Repository<Twitter>,
     private logger: LoggingService,
     private readonly walletService: WalletService,
-    private configService: ConfigService,
+    private readonly configService: ConfigService,
+    private readonly httpService: HttpService,
   ) {}
   config = this.configService.getConfig();
 
@@ -49,18 +52,28 @@ export class TwitterService {
 
   async getRecentTweetsByFundAddress(fundAddress: string): Promise<any> {
     const twitterUser = await this.findOneTwitterUserByFundAddress(fundAddress);
-
-    const params = {
-      query: `from:${twitterUser.twitterName} -is:retweet`,
-      'tweet.fields': 'author_id',
-    };
-
-    return await needle('get', this.twitterEndpointUrl, params, {
-      headers: {
-        'User-Agent': 'v2RecentSearchJS',
-        authorization: `Bearer ${this.twitterApiBearToken}`,
-      },
-    });
+    const { data } = await lastValueFrom(
+      this.httpService
+        .get(
+          `${this.twitterEndpointUrl}?query=from%3A${twitterUser.twitterName}%20-is%3Aretweet&tweet.fields=author_id`,
+          {
+            headers: {
+              'User-Agent': 'v2RecentSearchJS',
+              authorization: `Bearer ${this.twitterApiBearToken}`,
+            },
+          },
+        )
+        .pipe(
+          catchError((error: AxiosError) => {
+            this.logger.log({
+              type: LogType.ERROR,
+              message: `An error happened to fetch recent tweets for user: ${twitterUser.twitterName} with error: ${error}`,
+            });
+            throw 'An error happened to fetch recent tweets!';
+          }),
+        ),
+    );
+    return data.data;
   }
 
   async findOneTwitterUserByFundAddress(address: string) {
