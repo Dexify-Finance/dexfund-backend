@@ -1,4 +1,3 @@
-import { AxiosError } from 'axios';
 import { ConfigService } from './../config/config.service';
 import { LoggingService } from './../logger/logging.service';
 import { Currency } from './entities/currency.entity';
@@ -26,12 +25,7 @@ async function run() {
         httpService
           .get(`${config.BNB_PRICE_URL}?ids=${idList}&vs_currencies=usd`)
           .pipe(
-            catchError((error: AxiosError) => {
-              logger.log({
-                type: LogType.ERROR,
-                message:
-                  'Failed to fetch coin prices from CoinGecko with ' + error,
-              });
+            catchError(() => {
               throw 'An error happened!';
             }),
           ),
@@ -46,7 +40,7 @@ async function run() {
         type: LogType.ERROR,
         message: 'Failed to fetch coin prices from CoinGecko with ' + error,
       });
-      return {};
+      return false;
     }
   }
   parentPort.postMessage(await fetchCoinPrices(workerData));
