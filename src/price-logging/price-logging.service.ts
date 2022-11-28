@@ -28,6 +28,7 @@ export class PriceLoggingService {
       workerData: coinList,
     });
     worker.on('message', (message) => {
+      if (!message) return;
       this.savePrice(message, coinList);
     });
     worker.on('error', (e) => {
