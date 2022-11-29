@@ -40,7 +40,7 @@ async function run() {
         type: LogType.ERROR,
         message: 'Failed to fetch coin prices from CoinGecko with ' + error,
       });
-      return false;
+      return {};
     }
   }
   parentPort.postMessage(await fetchCoinPrices(workerData));
