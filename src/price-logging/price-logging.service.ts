@@ -21,14 +21,13 @@ export class PriceLoggingService {
   ) {}
   config = this.configService.getConfig();
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  @Cron(CronExpression.EVERY_30_MINUTES)
   async handleCron() {
     const coinList = await this.currencyRepository.find();
     const worker = new Worker(__dirname + '/worker.js', {
       workerData: coinList,
     });
     worker.on('message', (message) => {
-      if (!message) return;
       this.savePrice(message, coinList);
     });
     worker.on('error', (e) => {
@@ -104,6 +103,9 @@ export class PriceLoggingService {
         relations: {
           currency: true,
         },
+        order: {
+          timeStamp: 'DESC',
+        },
         where: {
           currency: {
             name: val,
@@ -117,7 +119,7 @@ export class PriceLoggingService {
       let i = 0;
       const data = [];
       while (i < dataCnt) {
-        data.push(priceArray[i + chunk]);
+        if (priceArray[i * chunk]?.price) data.push(priceArray[i * chunk]);
         i++;
       }
       result[val] = data;
