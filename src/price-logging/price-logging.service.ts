@@ -13,6 +13,7 @@ import { Worker } from 'worker_threads';
 
 @Injectable()
 export class PriceLoggingService {
+  initializable = true;
   constructor(
     @InjectRepository(Price)
     private priceRepository: Repository<Price>,
@@ -98,7 +99,7 @@ export class PriceLoggingService {
     interval: number,
   ) {
     const dataCnt = Math.floor((endDate - startDate) / interval + 1);
-    const chunk = Math.floor(interval / this.config.BNB_PRICE_TIME_INTERVAL);
+    const chunk = interval / this.config.BNB_PRICE_TIME_INTERVAL;
     const result = {};
     const coinList = ids.split(',');
     for (const val of coinList) {
@@ -122,7 +123,8 @@ export class PriceLoggingService {
       let i = 0;
       const data = [];
       while (i < dataCnt) {
-        if (priceArray[i * chunk]?.price) data.push(priceArray[i * chunk]);
+        if (priceArray[Math.floor(i * chunk)]?.price)
+          data.push(priceArray[Math.floor(i * chunk)]);
         i++;
       }
       result[val] = data;
@@ -131,6 +133,7 @@ export class PriceLoggingService {
   }
 
   async initializeCurrencyPrice() {
+    if (!this.initializable) return false;
     try {
       const coinList = await this.currencyRepository.find();
       Object.values(coinList).forEach(async (item) => {
@@ -173,10 +176,11 @@ export class PriceLoggingService {
           console.log(error);
         }
       });
-      return true;
+      this.initializable = false;
     } catch (error) {
       console.log(error.message);
       return false;
     }
+    return true;
   }
 }
