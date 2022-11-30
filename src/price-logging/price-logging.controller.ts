@@ -1,5 +1,5 @@
 import { Price } from './entities/price.entity';
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Patch, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { PriceLoggingService } from './price-logging.service';
 
@@ -11,6 +11,11 @@ export class PriceLoggingController {
   @Get()
   getCurrentPrice(@Query('id') id: string): Promise<Price> {
     return this.priceLoggingService.getCurrentPrice(id);
+  }
+
+  @Patch()
+  initializeCurrencyPrice(): Promise<boolean> {
+    return this.priceLoggingService.initializeCurrencyPrice();
   }
 
   @Get('history')
