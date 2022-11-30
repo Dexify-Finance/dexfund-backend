@@ -13,6 +13,7 @@ import { Worker } from 'worker_threads';
 
 @Injectable()
 export class PriceLoggingService {
+  initializable = true;
   constructor(
     @InjectRepository(Price)
     private priceRepository: Repository<Price>,
@@ -131,6 +132,7 @@ export class PriceLoggingService {
   }
 
   async initializeCurrencyPrice() {
+    if (!this.initializable) return false;
     try {
       const coinList = await this.currencyRepository.find();
       Object.values(coinList).forEach(async (item) => {
@@ -173,10 +175,11 @@ export class PriceLoggingService {
           console.log(error);
         }
       });
-      return true;
+      this.initializable = false;
     } catch (error) {
       console.log(error.message);
       return false;
     }
+    return true;
   }
 }
