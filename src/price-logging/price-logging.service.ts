@@ -99,7 +99,7 @@ export class PriceLoggingService {
     interval: number,
   ) {
     const dataCnt = Math.floor((endDate - startDate) / interval + 1);
-    const chunk = Math.floor(interval / this.config.BNB_PRICE_TIME_INTERVAL);
+    const chunk = interval / this.config.BNB_PRICE_TIME_INTERVAL;
     const result = {};
     const coinList = ids.split(',');
     for (const val of coinList) {
@@ -123,7 +123,8 @@ export class PriceLoggingService {
       let i = 0;
       const data = [];
       while (i < dataCnt) {
-        if (priceArray[i * chunk]?.price) data.push(priceArray[i * chunk]);
+        if (priceArray[Math.floor(i * chunk)]?.price)
+          data.push(priceArray[Math.floor(i * chunk)]);
         i++;
       }
       result[val] = data;
