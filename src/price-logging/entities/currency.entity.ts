@@ -14,4 +14,7 @@ export class Currency {
 
   @Column()
   name: string;
+
+  @Column()
+  address: string;
 }

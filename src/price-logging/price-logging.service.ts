@@ -1,3 +1,5 @@
+import { HttpService } from '@nestjs/axios';
+import { catchError, lastValueFrom } from 'rxjs';
 import { LoggingService } from './../logger/logging.service';
 import { Currency } from './entities/currency.entity';
 import { ConfigService } from './../config/config.service';
@@ -18,10 +20,11 @@ export class PriceLoggingService {
     private currencyRepository: Repository<Currency>,
     private readonly configService: ConfigService,
     private readonly logger: LoggingService,
+    private readonly httpService: HttpService,
   ) {}
   config = this.configService.getConfig();
 
-  @Cron(CronExpression.EVERY_30_MINUTES)
+  @Cron(CronExpression.EVERY_HOUR)
   async handleCron() {
     const coinList = await this.currencyRepository.find();
     const worker = new Worker(__dirname + '/worker.js', {
@@ -125,5 +128,55 @@ export class PriceLoggingService {
       result[val] = data;
     }
     return result;
+  }
+
+  async initializeCurrencyPrice() {
+    try {
+      const coinList = await this.currencyRepository.find();
+      Object.values(coinList).forEach(async (item) => {
+        try {
+          const { data } = await lastValueFrom(
+            this.httpService
+              .get(
+                `https://api.coingecko.com/api/v3/coins/${item.name}/market_chart?vs_currency=usd&days=90`,
+              )
+              .pipe(
+                catchError((e) => {
+                  console.log(e.message);
+                  throw 'An error happened!';
+                }),
+              ),
+          );
+
+          const queryValue = [];
+          data.prices.forEach(async (el: any[]) => {
+            queryValue.push({
+              currency: item.id,
+              price: el[1],
+              timeStamp: el[0],
+            });
+          });
+          await this.priceRepository
+            .createQueryBuilder()
+            .insert()
+            .into(Price)
+            .values(queryValue)
+            .execute();
+          this.logger.log({
+            type: LogType.INFO,
+            message: `${item.name} Coin prices successfuly saved`,
+          });
+          setTimeout(() => {
+            console.log('delayed');
+          }, 15000);
+        } catch (error) {
+          console.log(error);
+        }
+      });
+      return true;
+    } catch (error) {
+      console.log(error.message);
+      return false;
+    }
   }
 }
