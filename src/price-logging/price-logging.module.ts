@@ -1,3 +1,4 @@
+import { HttpModule } from '@nestjs/axios';
 import { Currency } from './entities/currency.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SharedModule } from './../shared/shared.module';
@@ -12,6 +13,7 @@ import { Price } from './entities/price.entity';
     ConfigModule,
     SharedModule,
     TypeOrmModule.forFeature([Price, Currency]),
+    HttpModule,
   ],
   controllers: [PriceLoggingController],
   providers: [PriceLoggingService],
