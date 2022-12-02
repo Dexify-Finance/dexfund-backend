@@ -34,24 +34,24 @@ export class TwitterService {
       createTwitterDto.signature,
     );
     delete createTwitterDto.signature;
-    const twitterUser = await this.findOneTwitterUserByFundAddress(
-      createTwitterDto.fundAddress,
+    const twitterUser = await this.findOneTwitterUserByAddress(
+      createTwitterDto.address,
     );
     if (twitterUser) {
       await this.twitterRepository.update(
         {
-          fundAddress: createTwitterDto.fundAddress,
+          address: createTwitterDto.address,
         },
         createTwitterDto,
       );
 
-      return this.findOneTwitterUserByFundAddress(createTwitterDto.address);
+      return this.findOneTwitterUserByAddress(createTwitterDto.address);
     }
     return this.createNewTwitterUser(createTwitterDto);
   }
 
-  async getRecentTweetsByFundAddress(fundAddress: string): Promise<any> {
-    const twitterUser = await this.findOneTwitterUserByFundAddress(fundAddress);
+  async getRecentTweetsByAddress(address: string): Promise<any> {
+    const twitterUser = await this.findOneTwitterUserByAddress(address);
     const { data } = await lastValueFrom(
       this.httpService
         .get(
@@ -73,10 +73,10 @@ export class TwitterService {
           }),
         ),
     );
-    return data.data;
+    return { tweets: data.data, twitterUser };
   }
 
-  async findOneTwitterUserByFundAddress(address: string) {
+  async findOneTwitterUserByAddress(address: string) {
     this.walletService.verifyAddress(address);
     const twitterUser = await this.twitterRepository.findOneBy({ address });
     if (!twitterUser) {

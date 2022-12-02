@@ -16,15 +16,6 @@ export class CreateTwitterDto {
   @ApiProperty()
   @Expose()
   @IsNotEmpty()
-  @MaxLength(ADDRESS_LENGTH, {
-    message:
-      'Address is too long. It should be $constraint1 characters, but actual is $value',
-  })
-  fundAddress: string;
-
-  @ApiProperty()
-  @Expose()
-  @IsNotEmpty()
   signature: string;
 
   @ApiProperty()

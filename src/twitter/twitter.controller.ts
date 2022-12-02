@@ -14,12 +14,12 @@ export class TwitterController {
   }
 
   @Get()
-  findOne(@Query('fundAddress') fundAddress: string) {
-    return this.twitterService.findOneTwitterUserByFundAddress(fundAddress);
+  findOne(@Query('address') address: string) {
+    return this.twitterService.findOneTwitterUserByAddress(address);
   }
 
   @Get('tweets')
-  getRecentTweets(@Query('fundAddress') fundAddress: string): Promise<any> {
-    return this.twitterService.getRecentTweetsByFundAddress(fundAddress);
+  getRecentTweets(@Query('address') address: string): Promise<any> {
+    return this.twitterService.getRecentTweetsByAddress(address);
   }
 }

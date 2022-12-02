@@ -3,7 +3,7 @@ import { WalletService } from './../shared/services/wallet.service';
 import { LogType } from './../shared/utility/enums';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { LoggingService } from '../logger/logging.service';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -18,8 +18,7 @@ export class UserService {
     private readonly bucketService: BucketService,
   ) {}
 
-  async getUser(address: string, signature?: string) {
-    if (signature) this.walletService.verifySigner(address, signature);
+  async getUser(address: string) {
     const user = await this.findOneUserByAddress(address);
     if (!user) {
       this.logger.log({
@@ -32,8 +31,7 @@ export class UserService {
       type: LogType.INFO,
       message: `User found: address is ${user.address}`,
     });
-    if (signature) return user;
-    return user.image;
+    return user;
   }
 
   async createOrUpdate(
@@ -70,7 +68,7 @@ export class UserService {
 
   private async findOneUserByAddress(address: string) {
     this.walletService.verifyAddress(address);
-    return await this.userRepository.findOneBy({ address });
+    return await this.userRepository.findOneBy({ address: ILike(address) });
   }
 
   private async uploadImageToS3(file: Express.Multer.File) {

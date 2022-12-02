@@ -7,17 +7,11 @@ export class Twitter {
   id: string;
 
   @Column({
-    nullable: false,
-    length: ADDRESS_LENGTH,
-  })
-  address: string;
-
-  @Column({
     unique: true,
     nullable: false,
     length: ADDRESS_LENGTH,
   })
-  fundAddress: string;
+  address: string;
 
   @Column({ nullable: false })
   twitterName: string;

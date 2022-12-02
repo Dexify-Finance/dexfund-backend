@@ -19,12 +19,8 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
-  getUser(
-    @Query('address') address: string,
-    @Query('signature')
-    signature?: string,
-  ) {
-    return this.userService.getUser(address, signature);
+  getUser(@Query('address') address: string) {
+    return this.userService.getUser(address);
   }
 
   @Post()
