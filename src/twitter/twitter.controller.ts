@@ -1,3 +1,4 @@
+import { User } from './../user/entities/user.entity';
 import { Body, Controller, Get, Patch, Query } from '@nestjs/common';
 import { TwitterService } from './twitter.service';
 import { ApiTags } from '@nestjs/swagger';
@@ -14,7 +15,9 @@ export class TwitterController {
   }
 
   @Patch('connect')
-  connectToTwitter(@Body() connectTwitterDto: ConnectTwitterDto) {
+  connectToTwitter(
+    @Body() connectTwitterDto: ConnectTwitterDto,
+  ): Promise<User> {
     return this.twitterService.getTwitterProfileAndUpdateUserInfo(
       connectTwitterDto,
     );

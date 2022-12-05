@@ -52,7 +52,7 @@ export class UserService {
     if (user) {
       await this.userRepository.update(
         {
-          address: updateUserDto.address,
+          address: ILike(updateUserDto.address),
         },
         { ...updateUserDto, image: imageUrl ?? '' },
       );

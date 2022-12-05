@@ -16,4 +16,19 @@ export class ConnectTwitterDto {
   @Expose()
   @IsNotEmpty()
   signature: string;
+
+  @ApiProperty({ required: true })
+  @Expose()
+  @IsNotEmpty()
+  oauth_token: string;
+
+  @ApiProperty({ required: true })
+  @Expose()
+  @IsNotEmpty()
+  oauth_token_secret: string;
+
+  @ApiProperty({ required: true })
+  @Expose()
+  @IsNotEmpty()
+  oauth_verifier: string;
 }

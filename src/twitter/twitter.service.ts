@@ -6,11 +6,11 @@ import { WalletService } from './../shared/services/wallet.service';
 import { LoggingService } from './../logger/logging.service';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { catchError, lastValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { AxiosError } from 'axios';
-import { TwitterApi } from 'twitter-api-v2';
+import { TwitterApi, UserV1 } from 'twitter-api-v2';
 @Injectable()
 export class TwitterService {
   constructor(
@@ -64,15 +64,46 @@ export class TwitterService {
   async getTwitterProfileAndUpdateUserInfo(
     connectTwitterDto: ConnectTwitterDto,
   ) {
-    return;
+    const client = new TwitterApi({
+      appKey: this.config.TWITTER_CONSUMER_KEY,
+      appSecret: this.config.TWITTER_CONSUMER_SECRET,
+      accessToken: connectTwitterDto.oauth_token,
+      accessSecret: connectTwitterDto.oauth_token_secret,
+    });
+    const roClient = (await client.login(connectTwitterDto.oauth_verifier))
+      .client;
+    const loggedUser = await roClient.currentUser();
+    return this.updateUserWithTwitter(connectTwitterDto.address, loggedUser);
   }
+
   async getAuthLink() {
     const client = new TwitterApi({
       appKey: this.config.TWITTER_CONSUMER_KEY,
       appSecret: this.config.TWITTER_CONSUMER_SECRET,
     });
     const authLink = await client.generateAuthLink('https://dexify.finance');
-    console.log(authLink.oauth_token, authLink.oauth_token_secret);
-    return authLink.url;
+    return authLink;
+  }
+
+  private async updateUserWithTwitter(
+    address: string,
+    loggedUser: UserV1,
+  ): Promise<User> {
+    this.walletService.verifyAddress(address);
+    const user = await this.userRepository.findOneBy({
+      address: ILike(address),
+    });
+    if (!user) {
+      return await this.userRepository.save({
+        address,
+        twitterName: loggedUser.name,
+        twitterScreenName: loggedUser.screen_name,
+        twitterImage: loggedUser.profile_image_url_https,
+      });
+    }
+    user.twitterName = loggedUser.name;
+    user.twitterScreenName = loggedUser.screen_name;
+    user.twitterImage = loggedUser.profile_image_url_https;
+    return await this.userRepository.save(user);
   }
 }
