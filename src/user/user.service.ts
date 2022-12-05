@@ -1,7 +1,11 @@
 import { BucketService } from './../shared/services/bucket.service';
 import { WalletService } from './../shared/services/wallet.service';
 import { LogType } from './../shared/utility/enums';
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { LoggingService } from '../logger/logging.service';
 import { ILike, Repository } from 'typeorm';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -25,7 +29,7 @@ export class UserService {
         type: LogType.WARN,
         message: 'User not found',
       });
-      return {};
+      throw new BadRequestException('User not found');
     }
     this.logger.log({
       type: LogType.INFO,

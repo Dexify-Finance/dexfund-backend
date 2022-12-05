@@ -1,5 +1,5 @@
 import { User } from './../user/entities/user.entity';
-import { Body, Controller, Get, Patch, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { TwitterService } from './twitter.service';
 import { ApiTags } from '@nestjs/swagger';
 import { ConnectTwitterDto } from './dto/connect-twitter.dto';
@@ -14,7 +14,7 @@ export class TwitterController {
     return this.twitterService.getRecentTweetsByAddress(address);
   }
 
-  @Patch('connect')
+  @Post('connect')
   connectToTwitter(
     @Body() connectTwitterDto: ConnectTwitterDto,
   ): Promise<User> {
@@ -22,8 +22,17 @@ export class TwitterController {
       connectTwitterDto,
     );
   }
+
   @Get('auth_link')
   getAuthLink() {
     return this.twitterService.getAuthLink();
+  }
+
+  @Get('disconnect')
+  deleteTwitterUser(
+    @Query('address') address: string,
+    @Query('signature') signature: string,
+  ) {
+    return this.twitterService.deleteTwitterUser(address, signature);
   }
 }

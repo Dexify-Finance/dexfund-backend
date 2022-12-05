@@ -4,7 +4,7 @@ import { LogType } from './../shared/utility/enums';
 import { ConfigService } from './../config/config.service';
 import { WalletService } from './../shared/services/wallet.service';
 import { LoggingService } from './../logger/logging.service';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
 import { catchError, lastValueFrom } from 'rxjs';
@@ -83,6 +83,27 @@ export class TwitterService {
     });
     const authLink = await client.generateAuthLink('https://dexify.finance');
     return authLink;
+  }
+
+  async deleteTwitterUser(address: string, signature: string) {
+    this.walletService.verifyAddress(address);
+    this.walletService.verifySigner(address, signature);
+    const user = await this.userRepository.findOneBy({
+      address: ILike(address),
+    });
+    if (!user) {
+      this.logger.log({
+        type: LogType.WARN,
+        message: 'User not found',
+      });
+      throw new BadRequestException('User not found');
+    }
+    return await this.userRepository.save({
+      ...user,
+      twitterImage: null,
+      twitterScreenName: null,
+      twitterName: null,
+    });
   }
 
   private async updateUserWithTwitter(
