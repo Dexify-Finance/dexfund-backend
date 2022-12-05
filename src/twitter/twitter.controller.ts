@@ -19,4 +19,8 @@ export class TwitterController {
       connectTwitterDto,
     );
   }
+  @Get('auth_link')
+  getAuthLink() {
+    return this.twitterService.getAuthLink();
+  }
 }

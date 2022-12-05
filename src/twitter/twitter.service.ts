@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import { catchError, lastValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { AxiosError } from 'axios';
-import Twitter from 'twitter-lite';
+import { TwitterApi } from 'twitter-api-v2';
 @Injectable()
 export class TwitterService {
   constructor(
@@ -23,8 +23,10 @@ export class TwitterService {
   ) {}
   config = this.configService.getConfig();
 
-  private readonly twitterApiBearToken = this.config.TWITTER_API_BEARER_TOKEN;
-  private readonly twitterEndpointUrl = this.config.TWITTER_ENDPOINT_URL;
+  private readonly twitterApiBearToken =
+    this.configService.getConfig().TWITTER_API_BEARER_TOKEN;
+  private readonly twitterEndpointUrl =
+    this.configService.getConfig().TWITTER_ENDPOINT_URL;
 
   async getRecentTweetsByAddress(address: string): Promise<any> {
     this.walletService.verifyAddress(address);
@@ -62,74 +64,15 @@ export class TwitterService {
   async getTwitterProfileAndUpdateUserInfo(
     connectTwitterDto: ConnectTwitterDto,
   ) {
-    try {
-      this.walletService.verifySigner(
-        connectTwitterDto.address,
-        connectTwitterDto.signature,
-      );
-      const { reqTkn, reqTknSecret } = await this.getRequestToken();
-      const { accTkn, accTknSecret } = await this.getAccessToken(
-        reqTkn,
-        reqTknSecret,
-      );
-
-      const client = new Twitter({
-        subdomain: 'api', // "api" is the default (change for other subdomains)
-        version: '1.1', // version "1.1" is the default (change for other subdomains)
-        consumer_key: this.config.TWITTER_CONSUMER_KEY, // from Twitter.
-        consumer_secret: this.config.TWITTER_CONSUMER_SECRET, // from Twitter.
-        access_token_key: accTkn, // from your User (oauth_token)
-        access_token_secret: accTknSecret, // from your User (oauth_token_secret)
-      });
-
-      const res = await client.get('account/verify_credentials');
-      console.log(res);
-      return res.data;
-    } catch (error) {
-      console.log(error);
-    }
+    return;
   }
-
-  private async getAccessToken(oauthToken: string, oauthVerifier: string) {
-    const client = new Twitter({
-      consumer_key: this.config.TWITTER_CONSUMER_KEY,
-      consumer_secret: this.config.TWITTER_CONSUMER_SECRET,
+  async getAuthLink() {
+    const client = new TwitterApi({
+      appKey: this.config.TWITTER_CONSUMER_KEY,
+      appSecret: this.config.TWITTER_CONSUMER_SECRET,
     });
-    try {
-      const response = await client.getAccessToken({
-        oauth_verifier: oauthVerifier,
-        oauth_token: oauthToken,
-      });
-      console.log({
-        accTkn: response.oauth_token,
-        accTknSecret: response.oauth_token_secret,
-        userId: response.user_id,
-        screenName: response.screen_name,
-      });
-      return {
-        accTkn: response.oauth_token,
-        accTknSecret: response.oauth_token_secret,
-      };
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  private async getRequestToken() {
-    const client = new Twitter({
-      consumer_key: this.config.TWITTER_CONSUMER_KEY,
-      consumer_secret: this.config.TWITTER_CONSUMER_SECRET,
-    });
-    try {
-      const response = await client.getRequestToken('https://dexify.finance');
-      if (response.oauth_callback_confirmed === 'true') {
-        return {
-          reqTkn: response?.oauth_token,
-          reqTknSecret: response?.oauth_token_secret,
-        };
-      } else return;
-    } catch (error) {
-      console.log(error);
-    }
+    const authLink = await client.generateAuthLink('https://dexify.finance');
+    console.log(authLink.oauth_token, authLink.oauth_token_secret);
+    return authLink.url;
   }
 }
