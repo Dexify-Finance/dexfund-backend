@@ -16,6 +16,8 @@ export interface Config {
   TWITTER_ENDPOINT_URL: string;
   BNB_PRICE_TIME_INTERVAL: number;
   BNB_PRICE_URL: string;
+  TWITTER_CONSUMER_KEY: string;
+  TWITTER_CONSUMER_SECRET: string;
 }
 
 export enum NodeEnv {
@@ -53,6 +55,8 @@ export class ConfigService {
         'BNB_PRICE_TIME_INTERVAL',
       ),
       BNB_PRICE_URL: this.getRequired('BNB_PRICE_URL'),
+      TWITTER_CONSUMER_KEY: this.getRequired('TWITTER_CONSUMER_KEY'),
+      TWITTER_CONSUMER_SECRET: this.getRequired('TWITTER_CONSUMER_SECRET'),
     };
   }
 

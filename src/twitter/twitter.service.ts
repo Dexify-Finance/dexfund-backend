@@ -1,21 +1,21 @@
+import { ConnectTwitterDto } from './dto/connect-twitter.dto';
+import { User } from './../user/entities/user.entity';
 import { LogType } from './../shared/utility/enums';
 import { ConfigService } from './../config/config.service';
 import { WalletService } from './../shared/services/wallet.service';
 import { LoggingService } from './../logger/logging.service';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { CreateTwitterDto } from './dto/create-twitter.dto';
-import { Twitter } from './entities/twitter.entity';
+import { ILike, Repository } from 'typeorm';
 import { catchError, lastValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { AxiosError } from 'axios';
-
+import { TwitterApi, UserV1 } from 'twitter-api-v2';
 @Injectable()
 export class TwitterService {
   constructor(
-    @InjectRepository(Twitter)
-    private twitterRepository: Repository<Twitter>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private logger: LoggingService,
     private readonly walletService: WalletService,
     private readonly configService: ConfigService,
@@ -28,34 +28,19 @@ export class TwitterService {
   private readonly twitterEndpointUrl =
     this.configService.getConfig().TWITTER_ENDPOINT_URL;
 
-  async createOrUpdate(createTwitterDto: CreateTwitterDto) {
-    this.walletService.verifySigner(
-      createTwitterDto.address,
-      createTwitterDto.signature,
-    );
-    delete createTwitterDto.signature;
-    const twitterUser = await this.findOneTwitterUserByFundAddress(
-      createTwitterDto.fundAddress,
-    );
-    if (twitterUser) {
-      await this.twitterRepository.update(
-        {
-          fundAddress: createTwitterDto.fundAddress,
-        },
-        createTwitterDto,
-      );
-
-      return this.findOneTwitterUserByFundAddress(createTwitterDto.address);
+  async getRecentTweetsByAddress(address: string): Promise<any> {
+    this.walletService.verifyAddress(address);
+    const user = await this.userRepository.findOneBy({ address });
+    if (!user) {
+      this.logger.log({
+        type: LogType.WARN,
+        message: 'User not found',
+      });
     }
-    return this.createNewTwitterUser(createTwitterDto);
-  }
-
-  async getRecentTweetsByFundAddress(fundAddress: string): Promise<any> {
-    const twitterUser = await this.findOneTwitterUserByFundAddress(fundAddress);
     const { data } = await lastValueFrom(
       this.httpService
         .get(
-          `${this.twitterEndpointUrl}?query=from%3A${twitterUser.twitterName}%20-is%3Aretweet&tweet.fields=author_id`,
+          `${this.twitterEndpointUrl}?query=from%3A${user.twitterName}%20-is%3Aretweet&tweet.fields=author_id`,
           {
             headers: {
               'User-Agent': 'v2RecentSearchJS',
@@ -67,30 +52,79 @@ export class TwitterService {
           catchError((error: AxiosError) => {
             this.logger.log({
               type: LogType.ERROR,
-              message: `An error happened to fetch recent tweets for user: ${twitterUser.twitterName} with error: ${error}`,
+              message: `An error happened to fetch recent tweets for user: ${user.twitterName} with error: ${error}`,
             });
             throw 'An error happened to fetch recent tweets!';
           }),
         ),
     );
-    return data.data;
+    return { tweets: data.data, user };
   }
 
-  async findOneTwitterUserByFundAddress(address: string) {
+  async getTwitterProfileAndUpdateUserInfo(
+    connectTwitterDto: ConnectTwitterDto,
+  ) {
+    const client = new TwitterApi({
+      appKey: this.config.TWITTER_CONSUMER_KEY,
+      appSecret: this.config.TWITTER_CONSUMER_SECRET,
+      accessToken: connectTwitterDto.oauth_token,
+      accessSecret: connectTwitterDto.oauth_token_secret,
+    });
+    const roClient = (await client.login(connectTwitterDto.oauth_verifier))
+      .client;
+    const loggedUser = await roClient.currentUser();
+    return this.updateUserWithTwitter(connectTwitterDto.address, loggedUser);
+  }
+
+  async getAuthLink() {
+    const client = new TwitterApi({
+      appKey: this.config.TWITTER_CONSUMER_KEY,
+      appSecret: this.config.TWITTER_CONSUMER_SECRET,
+    });
+    const authLink = await client.generateAuthLink('https://dexify.finance');
+    return authLink;
+  }
+
+  async deleteTwitterUser(address: string, signature: string) {
     this.walletService.verifyAddress(address);
-    const twitterUser = await this.twitterRepository.findOneBy({ address });
-    if (!twitterUser) {
+    this.walletService.verifySigner(address, signature);
+    const user = await this.userRepository.findOneBy({
+      address: ILike(address),
+    });
+    if (!user) {
       this.logger.log({
         type: LogType.WARN,
-        message: `No user provided for fund address ${address}`,
+        message: 'User not found',
       });
-
-      throw new NotFoundException('Not found this user!');
+      throw new BadRequestException('User not found');
     }
-    return twitterUser;
+    return await this.userRepository.save({
+      ...user,
+      twitterImage: null,
+      twitterScreenName: null,
+      twitterName: null,
+    });
   }
 
-  private async createNewTwitterUser(data: any): Promise<Twitter> {
-    return await this.twitterRepository.save(data);
+  private async updateUserWithTwitter(
+    address: string,
+    loggedUser: UserV1,
+  ): Promise<User> {
+    this.walletService.verifyAddress(address);
+    const user = await this.userRepository.findOneBy({
+      address: ILike(address),
+    });
+    if (!user) {
+      return await this.userRepository.save({
+        address,
+        twitterName: loggedUser.name,
+        twitterScreenName: loggedUser.screen_name,
+        twitterImage: loggedUser.profile_image_url_https,
+      });
+    }
+    user.twitterName = loggedUser.name;
+    user.twitterScreenName = loggedUser.screen_name;
+    user.twitterImage = loggedUser.profile_image_url_https;
+    return await this.userRepository.save(user);
   }
 }
