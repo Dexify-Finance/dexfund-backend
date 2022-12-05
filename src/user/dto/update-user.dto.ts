@@ -46,6 +46,18 @@ export class UpdateUserDto {
   })
   name: string;
 
+  @ApiProperty({ required: false })
+  @Expose()
+  twitterName: string;
+
+  @ApiProperty({ required: false })
+  @Expose()
+  twitterScreenName: string;
+
+  @ApiProperty({ required: false })
+  @Expose()
+  twitterImage: string;
+
   @ApiProperty({ type: 'string', format: 'binary', required: false })
   file: Express.Multer.File;
 }

@@ -2,9 +2,8 @@ import { ADDRESS_LENGTH } from './../../utils/constants';
 import { IsNotEmpty, MaxLength } from 'class-validator';
 import { Expose } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-
-export class CreateTwitterDto {
-  @ApiProperty()
+export class ConnectTwitterDto {
+  @ApiProperty({ required: true })
   @Expose()
   @IsNotEmpty()
   @MaxLength(ADDRESS_LENGTH, {
@@ -13,20 +12,8 @@ export class CreateTwitterDto {
   })
   address: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: true })
   @Expose()
   @IsNotEmpty()
   signature: string;
-
-  @ApiProperty()
-  @Expose()
-  twitterName: string;
-
-  @ApiProperty()
-  @Expose()
-  twitterScreenName: string;
-
-  @ApiProperty()
-  @Expose()
-  twitterImage: string;
 }

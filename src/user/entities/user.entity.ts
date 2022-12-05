@@ -32,4 +32,13 @@ export class User {
 
   @Column({ nullable: true })
   image: string;
+
+  @Column({ nullable: true })
+  twitterName: string;
+
+  @Column({ nullable: true })
+  twitterScreenName: string;
+
+  @Column({ nullable: true })
+  twitterImage: string;
 }

@@ -1,21 +1,21 @@
+import { ConnectTwitterDto } from './dto/connect-twitter.dto';
+import { User } from './../user/entities/user.entity';
 import { LogType } from './../shared/utility/enums';
 import { ConfigService } from './../config/config.service';
 import { WalletService } from './../shared/services/wallet.service';
 import { LoggingService } from './../logger/logging.service';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CreateTwitterDto } from './dto/create-twitter.dto';
-import { Twitter } from './entities/twitter.entity';
 import { catchError, lastValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { AxiosError } from 'axios';
-
+import Twitter from 'twitter-lite';
 @Injectable()
 export class TwitterService {
   constructor(
-    @InjectRepository(Twitter)
-    private twitterRepository: Repository<Twitter>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private logger: LoggingService,
     private readonly walletService: WalletService,
     private readonly configService: ConfigService,
@@ -23,39 +23,22 @@ export class TwitterService {
   ) {}
   config = this.configService.getConfig();
 
-  private readonly twitterApiBearToken =
-    this.configService.getConfig().TWITTER_API_BEARER_TOKEN;
-  private readonly twitterEndpointUrl =
-    this.configService.getConfig().TWITTER_ENDPOINT_URL;
-
-  async createOrUpdate(createTwitterDto: CreateTwitterDto) {
-    this.walletService.verifySigner(
-      createTwitterDto.address,
-      createTwitterDto.signature,
-    );
-    delete createTwitterDto.signature;
-    const twitterUser = await this.findOneTwitterUserByAddress(
-      createTwitterDto.address,
-    );
-    if (twitterUser) {
-      await this.twitterRepository.update(
-        {
-          address: createTwitterDto.address,
-        },
-        createTwitterDto,
-      );
-
-      return this.findOneTwitterUserByAddress(createTwitterDto.address);
-    }
-    return this.createNewTwitterUser(createTwitterDto);
-  }
+  private readonly twitterApiBearToken = this.config.TWITTER_API_BEARER_TOKEN;
+  private readonly twitterEndpointUrl = this.config.TWITTER_ENDPOINT_URL;
 
   async getRecentTweetsByAddress(address: string): Promise<any> {
-    const twitterUser = await this.findOneTwitterUserByAddress(address);
+    this.walletService.verifyAddress(address);
+    const user = await this.userRepository.findOneBy({ address });
+    if (!user) {
+      this.logger.log({
+        type: LogType.WARN,
+        message: 'User not found',
+      });
+    }
     const { data } = await lastValueFrom(
       this.httpService
         .get(
-          `${this.twitterEndpointUrl}?query=from%3A${twitterUser.twitterName}%20-is%3Aretweet&tweet.fields=author_id`,
+          `${this.twitterEndpointUrl}?query=from%3A${user.twitterName}%20-is%3Aretweet&tweet.fields=author_id`,
           {
             headers: {
               'User-Agent': 'v2RecentSearchJS',
@@ -67,30 +50,86 @@ export class TwitterService {
           catchError((error: AxiosError) => {
             this.logger.log({
               type: LogType.ERROR,
-              message: `An error happened to fetch recent tweets for user: ${twitterUser.twitterName} with error: ${error}`,
+              message: `An error happened to fetch recent tweets for user: ${user.twitterName} with error: ${error}`,
             });
             throw 'An error happened to fetch recent tweets!';
           }),
         ),
     );
-    return { tweets: data.data, twitterUser };
+    return { tweets: data.data, user };
   }
 
-  async findOneTwitterUserByAddress(address: string) {
-    this.walletService.verifyAddress(address);
-    const twitterUser = await this.twitterRepository.findOneBy({ address });
-    if (!twitterUser) {
-      this.logger.log({
-        type: LogType.WARN,
-        message: `No user provided for fund address ${address}`,
+  async getTwitterProfileAndUpdateUserInfo(
+    connectTwitterDto: ConnectTwitterDto,
+  ) {
+    try {
+      this.walletService.verifySigner(
+        connectTwitterDto.address,
+        connectTwitterDto.signature,
+      );
+      const { reqTkn, reqTknSecret } = await this.getRequestToken();
+      const { accTkn, accTknSecret } = await this.getAccessToken(
+        reqTkn,
+        reqTknSecret,
+      );
+
+      const client = new Twitter({
+        subdomain: 'api', // "api" is the default (change for other subdomains)
+        version: '1.1', // version "1.1" is the default (change for other subdomains)
+        consumer_key: this.config.TWITTER_CONSUMER_KEY, // from Twitter.
+        consumer_secret: this.config.TWITTER_CONSUMER_SECRET, // from Twitter.
+        access_token_key: accTkn, // from your User (oauth_token)
+        access_token_secret: accTknSecret, // from your User (oauth_token_secret)
       });
 
-      throw new NotFoundException('Not found this user!');
+      const res = await client.get('account/verify_credentials');
+      console.log(res);
+      return res.data;
+    } catch (error) {
+      console.log(error);
     }
-    return twitterUser;
   }
 
-  private async createNewTwitterUser(data: any): Promise<Twitter> {
-    return await this.twitterRepository.save(data);
+  private async getAccessToken(oauthToken: string, oauthVerifier: string) {
+    const client = new Twitter({
+      consumer_key: this.config.TWITTER_CONSUMER_KEY,
+      consumer_secret: this.config.TWITTER_CONSUMER_SECRET,
+    });
+    try {
+      const response = await client.getAccessToken({
+        oauth_verifier: oauthVerifier,
+        oauth_token: oauthToken,
+      });
+      console.log({
+        accTkn: response.oauth_token,
+        accTknSecret: response.oauth_token_secret,
+        userId: response.user_id,
+        screenName: response.screen_name,
+      });
+      return {
+        accTkn: response.oauth_token,
+        accTknSecret: response.oauth_token_secret,
+      };
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  private async getRequestToken() {
+    const client = new Twitter({
+      consumer_key: this.config.TWITTER_CONSUMER_KEY,
+      consumer_secret: this.config.TWITTER_CONSUMER_SECRET,
+    });
+    try {
+      const response = await client.getRequestToken('https://dexify.finance');
+      if (response.oauth_callback_confirmed === 'true') {
+        return {
+          reqTkn: response?.oauth_token,
+          reqTknSecret: response?.oauth_token_secret,
+        };
+      } else return;
+    } catch (error) {
+      console.log(error);
+    }
   }
 }
