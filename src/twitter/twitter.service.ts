@@ -38,6 +38,7 @@ export class TwitterService {
         type: LogType.WARN,
         message: 'User not found',
       });
+      throw new BadRequestException('Not found user');
     }
     const { data } = await lastValueFrom(
       this.httpService
