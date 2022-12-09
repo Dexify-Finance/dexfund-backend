@@ -30,7 +30,9 @@ export class TwitterService {
 
   async getRecentTweetsByAddress(address: string): Promise<any> {
     this.walletService.verifyAddress(address);
-    const user = await this.userRepository.findOneBy({ address });
+    const user = await this.userRepository.findOneBy({
+      address: ILike(address),
+    });
     if (!user) {
       this.logger.log({
         type: LogType.WARN,
