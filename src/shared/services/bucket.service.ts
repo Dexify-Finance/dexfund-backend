@@ -9,7 +9,6 @@ import { ConfigService } from '../../config/config.service';
 export interface PutObjectParams {
   file: Express.Multer.File;
   path: string;
-  public?: boolean;
 }
 
 @Injectable()
@@ -33,12 +32,11 @@ export class BucketService {
     });
   }
 
-  async putObject({ path, file, public: aclPublic = true }: PutObjectParams) {
+  async putObject({ path, file }: PutObjectParams) {
     const command = new PutObjectCommand({
       Bucket: this.bucket,
       Key: path,
       Body: file.buffer,
-      ACL: aclPublic ? 'public-read' : 'private',
     });
 
     await this.s3Client.send(command);
