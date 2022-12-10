@@ -21,7 +21,7 @@ export class BucketService {
     const config = configService.getConfig();
 
     this.bucket = config.AWS_S3_BUCKET;
-    this.baseUrl = `https://${this.bucket}.s3.${config.AWS_REGION}.amazonaws.com`;
+    this.baseUrl = `https://s3.${config.AWS_REGION}.amazonaws.com/${this.bucket}`;
     this.s3Client = new S3Client({
       region: config.AWS_REGION,
       apiVersion: 'latest',
