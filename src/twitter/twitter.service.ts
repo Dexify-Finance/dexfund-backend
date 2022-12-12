@@ -43,7 +43,7 @@ export class TwitterService {
     const { data } = await lastValueFrom(
       this.httpService
         .get(
-          `${this.twitterEndpointUrl}?query=from%3A${user.twitterName}%20-is%3Aretweet&tweet.fields=author_id`,
+          `${this.twitterEndpointUrl}?query=from%3A${user.twitterScreenName}%20-is%3Aretweet&tweet.fields=author_id`,
           {
             headers: {
               'User-Agent': 'v2RecentSearchJS',
