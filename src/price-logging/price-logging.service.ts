@@ -136,6 +136,7 @@ export class PriceLoggingService {
     if (!this.initializable) return false;
     try {
       const coinList = await this.currencyRepository.find();
+      await this.priceRepository.clear();
       Object.values(coinList).forEach(async (item) => {
         try {
           const { data } = await lastValueFrom(
