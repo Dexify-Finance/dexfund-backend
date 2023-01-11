@@ -27,6 +27,9 @@ export class PriceLoggingService {
 
   @Cron(CronExpression.EVERY_HOUR)
   async handleCron() {
+    if (this.initializable) {
+      await this.sleep(350000);
+    }
     const coinList = await this.currencyRepository.find();
     const worker = new Worker(__dirname + '/worker.js', {
       workerData: coinList,
@@ -137,7 +140,7 @@ export class PriceLoggingService {
     try {
       const coinList = await this.currencyRepository.find();
       await this.priceRepository.clear();
-      Object.values(coinList).forEach(async (item) => {
+      for (const item of coinList) {
         try {
           const { data } = await lastValueFrom(
             this.httpService
@@ -146,7 +149,10 @@ export class PriceLoggingService {
               )
               .pipe(
                 catchError((e) => {
-                  console.log(e.message);
+                  this.logger.log({
+                    type: LogType.ERROR,
+                    message: e.message,
+                  });
                   throw 'An error happened!';
                 }),
               ),
@@ -168,20 +174,24 @@ export class PriceLoggingService {
             .execute();
           this.logger.log({
             type: LogType.INFO,
-            message: `${item.name} Coin prices successfuly saved`,
+            message: `${item.name} Coin prices successfully saved`,
           });
-          setTimeout(() => {
-            console.log('delayed');
-          }, 15000);
+          await this.sleep(10000);
         } catch (error) {
           console.log(error);
         }
-      });
+      }
       this.initializable = false;
     } catch (error) {
       console.log(error.message);
       return false;
     }
     return true;
+  }
+
+  private sleep(ms: number) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
   }
 }
