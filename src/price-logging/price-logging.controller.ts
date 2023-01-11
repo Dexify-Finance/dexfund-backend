@@ -13,7 +13,7 @@ export class PriceLoggingController {
     return this.priceLoggingService.getCurrentPrice(id);
   }
 
-  @Patch()
+  @Patch('initialize')
   initializeCurrencyPrice(): Promise<boolean> {
     return this.priceLoggingService.initializeCurrencyPrice();
   }
