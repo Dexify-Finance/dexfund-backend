@@ -5,8 +5,8 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
-import { LoggingService } from '../logger/logging.service';
 import { ILike, Repository } from 'typeorm';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
@@ -14,10 +14,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    private logger: LoggingService,
     private readonly walletService: WalletService,
     private readonly bucketService: BucketService,
   ) {}
@@ -25,16 +25,10 @@ export class UserService {
   async getUser(address: string) {
     const user = await this.findOneUserByAddress(address);
     if (!user) {
-      this.logger.log({
-        type: LogType.WARN,
-        message: 'User not found',
-      });
+      this.logger.warn('User not found');
       throw new BadRequestException('User not found');
     }
-    this.logger.log({
-      type: LogType.INFO,
-      message: `User found: address is ${user.address}`,
-    });
+    this.logger.log(`User found: address is ${user.address}`);
     return user;
   }
 
@@ -85,10 +79,7 @@ export class UserService {
       });
       return fileUrl;
     } catch (err) {
-      this.logger.log({
-        type: LogType.ERROR,
-        message: `Failed to upload media [${file.originalname}], size: [${file.size}] to s3`,
-      });
+      this.logger.error(`Failed to upload media [${file.originalname}], size: [${file.size}] to s3`);
 
       throw new InternalServerErrorException('Failed to upload image');
     }

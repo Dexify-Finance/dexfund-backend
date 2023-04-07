@@ -5,23 +5,21 @@ import {
   ExecutionContext,
   Injectable,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
-import { LoggingService } from '../../logger/logging.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
+  private readonly logger = new Logger(AuthGuard.name);
+
   constructor(
-    private logger: LoggingService,
     private readonly walletService: WalletService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     if (!request.body.signature || !request.body.address) {
-      this.logger.log({
-        type: LogType.ERROR,
-        message: 'No token provided for auth request',
-      });
+      this.logger.error('No token provided for auth request');
 
       throw new UnauthorizedException({
         message: 'No auth token provided',

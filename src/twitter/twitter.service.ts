@@ -3,8 +3,7 @@ import { User } from './../user/entities/user.entity';
 import { LogType } from './../shared/utility/enums';
 import { ConfigService } from './../config/config.service';
 import { WalletService } from './../shared/services/wallet.service';
-import { LoggingService } from './../logger/logging.service';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
 import { catchError, lastValueFrom } from 'rxjs';
@@ -13,10 +12,10 @@ import { AxiosError } from 'axios';
 import { TwitterApi, UserV1 } from 'twitter-api-v2';
 @Injectable()
 export class TwitterService {
+  private readonly logger = new Logger(TwitterService.name);
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    private logger: LoggingService,
     private readonly walletService: WalletService,
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
@@ -34,10 +33,7 @@ export class TwitterService {
       address: ILike(address),
     });
     if (!user) {
-      this.logger.log({
-        type: LogType.WARN,
-        message: 'User not found',
-      });
+      this.logger.warn('User not found');
       throw new BadRequestException('Not found user');
     }
     const { data } = await lastValueFrom(
@@ -53,10 +49,7 @@ export class TwitterService {
         )
         .pipe(
           catchError((error: AxiosError) => {
-            this.logger.log({
-              type: LogType.ERROR,
-              message: `An error happened to fetch recent tweets for user: ${user.twitterName} with error: ${error}`,
-            });
+            this.logger.error(`An error happened to fetch recent tweets for user: ${user.twitterName} with error: ${error}`);
             throw 'An error happened to fetch recent tweets!';
           }),
         ),
@@ -95,10 +88,7 @@ export class TwitterService {
       address: ILike(address),
     });
     if (!user) {
-      this.logger.log({
-        type: LogType.WARN,
-        message: 'User not found',
-      });
+      this.logger.warn('User not found');
       throw new BadRequestException('User not found');
     }
     return await this.userRepository.save({
