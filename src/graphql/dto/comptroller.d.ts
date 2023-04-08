@@ -1,3 +1,4 @@
 export type ComptrollerDto = {
-    id: string
+    id: string;
+    denominationAsset?: AssetDto;
 }

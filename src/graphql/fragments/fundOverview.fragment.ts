@@ -9,6 +9,12 @@ export const FundOverviewFragment = gql`
     inception,
     accessor {
       id
+      denominationAsset {
+        id
+        name
+        symbol
+        decimals
+      }
     }
     creator {
       id
