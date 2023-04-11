@@ -16,6 +16,15 @@ export const allFunds = (skip: number, from: number): DocumentNode => {
         ) {
           ...portfolioFragment
         }
+        firstShare: sharesHistory (
+          where: { timestamp_lt: ${from.toString()} }
+          orderBy: timestamp
+          orderDirection: desc
+          first: 1
+        ) {
+          timestamp
+          totalSupply
+        }
       }
     }
   `;

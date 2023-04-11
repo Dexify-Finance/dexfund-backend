@@ -56,7 +56,7 @@ export const monthlyEthPriceQuery = (): DocumentNode => {
   
   for (let i = START_YEAR; i <= currentYear; i ++) {
     for (let j = 0; j < 12; j ++) {
-      const timestamp = new Date(`${i}-${j + 1}`).getTime() / 1000;
+      const timestamp = (new Date(`${i}-${j + 1}`).getTime() + 30 * 24 * 3600 * 1000) / 1000;
       const subQuery = constructSubQuery(timestamp.toString());
       queries += subQuery;
       if (i === currentYear && j === currentMonth) {

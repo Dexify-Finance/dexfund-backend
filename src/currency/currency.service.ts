@@ -5,8 +5,8 @@ import { START_YEAR, TimeRange } from 'src/utils/constants';
 import { getIntervalForTimeRange } from 'src/utils/helper';
 import { Worker } from 'worker_threads';
 import { AssetPriceHistory, EthPriceHistory, MonthlyEthPriceHistory, TimeData } from './worker/worker';
-import { FundDto } from 'src/graphql/dto/fund';
 import { CurrencyPriceDto } from 'src/graphql/dto/currency';
+import { FundDto } from 'src/fund/dto/fund.dto';
 
 @Injectable()
 export class CurrencyService {
@@ -17,7 +17,7 @@ export class CurrencyService {
   assets: AssetDto[];
   assetPriceHistories: AssetPriceHistory[];
   currentEthPrice: string;
-  allFunds: (FundDto & {aum1WAgo: number})[];
+  allFunds: (FundDto)[];
   
   constructor(private readonly graphqlSerivce: GraphqlService) {}
 
@@ -36,7 +36,7 @@ export class CurrencyService {
       assets: AssetDto[],
       assetPriceHistories: AssetPriceHistory[],
       monthlyEthPrices: MonthlyEthPriceHistory,
-      allFunds: (FundDto & {aum1WAgo: number})[]
+      allFunds: (FundDto)[]
     }) => {
       this.timeData = result.timeData;
       this.currentEthPrice = result.currentEthPrice;
@@ -97,7 +97,7 @@ export class CurrencyService {
     const priceHistory = [];
     for (let i = START_YEAR; i <= currentYear; i ++) {
       for (let j = 0; j < 12; j ++) {
-        const timestamp = new Date(`${i}-${j + 1}`).getTime() / 1000;
+        const timestamp = (new Date(`${i}-${j + 1}`).getTime() + 30 * 24 * 3600 * 1000) / 1000;
         const prices = this.monthlyEthPriceHistories[`price_history_${timestamp}`];
         const price = prices?.[0]?.price;
         if (price) {

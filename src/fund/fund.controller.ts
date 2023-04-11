@@ -28,9 +28,9 @@ export class FundController {
     return this.fundService.getFundOverviewWithHistory(id, query.timeRange);
   }
 
-  @Get('id/monthly')
-  getMonthlyFundData(@Param('id') id: string) {
-    
+  @Get(':id/chart')
+  getFundChart(@Param('id') id: string, @Query() query: FundOverviewWithHistoryDto) {
+    return this.fundService.getFundChartData(id, query.timeRange);
   }
 
 }

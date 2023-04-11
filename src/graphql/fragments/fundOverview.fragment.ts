@@ -29,5 +29,8 @@ export const FundOverviewFragment = gql`
     portfolio {
       ...portfolioFragment
     }
+    shares {
+      totalSupply
+    }
   }
 `;

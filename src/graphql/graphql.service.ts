@@ -74,6 +74,7 @@ export class GraphqlService {
     });
 
     if (result.error || (result.errors && result.errors.length > 0)) {
+      console.log("err: ", result.error, result.errors)
       throw Error;
     }
 

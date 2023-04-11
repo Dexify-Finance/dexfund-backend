@@ -11,6 +11,7 @@ export interface FundDto {
   manager: FundUserDto;
   portfolio: PortfolioDto;
   inception: string;
+  shares: ShareStateDto;
 
   portfolioHistory?: PortfolioDto[];
   lastPortfolio?: PortfolioDto[];

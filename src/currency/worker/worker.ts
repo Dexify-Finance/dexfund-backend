@@ -88,18 +88,28 @@ const getEthPriceHistory = async (
 
 const getEthPriceHistories = async (timeData: TimeData) => {
   const ethPriceHistories = {};
-
-  await Promise.all(
-    Object.entries(TimeRange).map(async ([key, value], index) => {
-      const time = timeData[value];
-      const ethPriceHistory = await getEthPriceHistory(
-        time.from,
-        time.to,
-        time.interval,
-      );
-      ethPriceHistories[value] = ethPriceHistory;
-    }),
-  );
+  const times = Object.entries(TimeRange);
+  
+  for (let i = 0; i < times.length; i ++) {
+    const time = timeData[times[i][1]];
+    const ethPriceHistory = await getEthPriceHistory(
+      time.from,
+      time.to,
+      time.interval,
+    );
+    ethPriceHistories[times[i][1]] = ethPriceHistory;
+  }
+  // await Promise.all(
+  //   Object.entries(TimeRange).map(async ([key, value], index) => {
+  //     const time = timeData[value];
+  //     const ethPriceHistory = await getEthPriceHistory(
+  //       time.from,
+  //       time.to,
+  //       time.interval,
+  //     );
+  //     ethPriceHistories[value] = ethPriceHistory;
+  //   }),
+  // );
 
   return ethPriceHistories;
 };
@@ -154,6 +164,7 @@ async function getAllFunds(ethPriceHistories: any, currentEthPrice: string, time
       (acc, cur) => acc + Number(cur.amount) * Number(cur.asset.price.price),
       0,
     );
+    let totalShareSupply = Number(fund.shares.totalSupply || 0);
     
     aum *= Number(currentEthPrice);
 
@@ -161,10 +172,10 @@ async function getAllFunds(ethPriceHistories: any, currentEthPrice: string, time
       (acc, cur) => acc + Number(cur.amount) * Number(cur.price.price),
       0,
     );
+    let totalShareSupply1WAgo = Number(fund.firstShare?.[0]?.totalSupply || 0);
     
     const prices = history[`price_history_${from}`];
     aum1WAgo *= Number(prices[0].price);
-
 
     // get assets
     const assets = fund.portfolio.holdings.map(holding => ({
@@ -176,6 +187,10 @@ async function getAllFunds(ethPriceHistories: any, currentEthPrice: string, time
     return {
       aum,
       aum1WAgo,
+      totalShareSupply,
+      totalShareSupply1WAgo,
+      sharePrice: totalShareSupply > 0 ? aum / totalShareSupply : 0,
+      sharePrice1WAgo: totalShareSupply1WAgo > 0 ? aum1WAgo / totalShareSupply1WAgo : 0,
       assets,
       ...fund
     }
@@ -200,12 +215,18 @@ async function run() {
     isBusy = true;
     if (app && currencyService && graphqlService) {
       const timeData = getNormalizedTimes();
+      console.log("Prepared timeData: ")
       const ethPriceHistories = await getEthPriceHistories(timeData);
+      console.log("Prepared eth prices: ")
 
       const assets = await currencyService.getAssets();
+      console.log("Prepared assets: ")
       const currentEthPrice = await currencyService.getCurrentEthPrice();
+      console.log("Prepared current eth price: ")
       const allFunds = await getAllFunds(ethPriceHistories, currentEthPrice, timeData);
+      console.log("Prepared all funds: ")
       const monthlyEthPrices = await currencyService.getMonthlyEthPrices();
+      console.log("Prepared monthly eth prices: ")
       // const assetPriceHistories = await getAssetPriceHistories(
       //   assets,
       //   timeData,

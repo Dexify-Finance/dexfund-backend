@@ -18,7 +18,8 @@ type Monthly = {
     sharePriceChangeBips: number
 }
 
-export class FundOverviewWithHistoryResponse {
+
+export class FundOverviewResponse {
     id: string;
     name?: string;
     inception: string;
@@ -27,17 +28,29 @@ export class FundOverviewWithHistoryResponse {
     manager?: FundUserDto;
     assets?: (AssetDto & {aum: number})[];
     aum?: number;
+    aum1WAgo?: number;
     totalShares?: number;
 
+    sharePrice?: number;
+    sharePrice1WAgo?: number;
+    totalShareSupply?: number;
+    totalShareSupply1WAgo: number;
+}
+
+export class FundOverviewWithHistoryResponse extends FundOverviewResponse {
     sparkline?: string;
     sparkline_shares?: string;
-
     sharePriceChanges?: number;
     aumChanges?: number;
 
     aumHistory?: number[];
+    sharesHistory?: number[];
     sharePriceHistory?: number[];
     timeHistory?: number[];
-
     monthlyStates?: Monthly[]
+}
+
+
+export class FundDto extends FundOverviewResponse {
+
 }
