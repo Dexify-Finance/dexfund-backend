@@ -26,7 +26,7 @@ export class FundOverviewResponse {
     accessor?: ComptrollerDto;
     creator?: FundUserDto;
     manager?: FundUserDto;
-    assets?: (AssetDto & {aum: number})[];
+    assets?: (AssetDto & {aum: number, amount: number})[];
     aum?: number;
     aum1WAgo?: number;
     totalShares?: number;

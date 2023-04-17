@@ -71,6 +71,7 @@ export class FundService {
     const assets = fundDetail.portfolio.holdings.map((holding) => ({
       aum: Number(holding.amount) * Number(holding.asset.price.price),
       ...holding.asset,
+      amount: Number(holding.amount)
     }));
     assets.sort((a, b) => b.aum - a.aum);
     overview.assets = assets;
