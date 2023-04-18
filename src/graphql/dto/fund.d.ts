@@ -3,6 +3,7 @@ import { FundUserDto } from './fundUser';
 import { PortfolioDto } from './portfolio';
 import { ShareStateDto } from './share';
 import { MonthlyStateDto } from './monthlyState';
+import { FundCategoryType } from 'src/fund/entity/fund.entity';
 export interface FundDto {
   id: string;
   name: string;
@@ -13,6 +14,8 @@ export interface FundDto {
   inception: string;
   shares: ShareStateDto;
 
+  image?: string;
+  category?: FundCategoryType;
   portfolioHistory?: PortfolioDto[];
   lastPortfolio?: PortfolioDto[];
   firstPortfolio?: PortfolioDto[];

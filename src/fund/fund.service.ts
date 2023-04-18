@@ -1,28 +1,54 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CurrencyService } from 'src/currency/currency.service';
 import { PortfolioDto } from 'src/graphql/dto/portfolio';
 import { GraphqlService } from 'src/graphql/graphql.service';
-import { FundDto, FundOverviewResponse, FundOverviewWithHistoryResponse } from './dto/fund.dto';
+import {
+  FundDto,
+  FundOverviewResponse,
+  FundOverviewWithHistoryResponse,
+} from './dto/fund.dto';
 import * as sparkline from 'node-sparkline';
 import { SparkLineConfig } from 'src/utils/constants';
 import { ShareStateDto } from 'src/graphql/dto/share';
 import { FundDto as GraphQLFundDto } from 'src/graphql/dto/fund';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Fund } from './entity/fund.entity';
+import { ILike, Repository } from 'typeorm';
+import { UpdateFundDto } from './dto/update-fund.dto';
+import { WalletService } from 'src/shared/services/wallet.service';
+import { BucketService } from 'src/shared/services/bucket.service';
+import { ethers } from 'ethers';
+import VaultLib from '../abi/VaultLib.js';
 
 @Injectable()
 export class FundService {
+  private readonly logger = new Logger(FundService.name);
+
   constructor(
     private readonly graphqlSerivce: GraphqlService,
     private readonly currencyService: CurrencyService,
+    private readonly walletService: WalletService,
+    private readonly bucketService: BucketService,
+    @InjectRepository(Fund)
+    private fundRepository: Repository<Fund>,
   ) {}
 
   async getFundOverview(id: string) {
-    return this.graphqlSerivce.getFundOverview(id);
+    const data = await this.graphqlSerivce.getFundOverview(id);
+    const fundMeta = await this.findOneFundByAddress(data.id);
+    data.image = fundMeta?.image;
+    data.category = fundMeta?.category;
+
+    return data;
   }
 
-  async getFundOverviewWithHistory(
-    id: string,
-    timeRange: string,
-  ) {
+  async getFundOverviewWithHistory(id: string, timeRange: string) {
     const timeData = this.currencyService.timeData;
     const { from, to, interval } = timeData[timeRange];
     const fundDetail = await this.graphqlSerivce.getFundOverviewWithHistory(
@@ -41,22 +67,22 @@ export class FundService {
       totalShares: Number(fundDetail.lastShare[0].totalSupply),
     };
 
+    const fundMeta = await this.findOneFundByAddress(fundDetail.id);
+    overview.image = fundMeta?.image;
+    overview.category = fundMeta?.category;
+
     // calc aum
     const aum = await this.calcAUM(fundDetail.portfolio);
     overview.aum = aum;
 
     // generate sparkline
-    const {
-      svg,
-      aumChanges,
-      svg_sharePrices,
-      sharePriceChanges,
-    } = await this.generateChartData(
-      fundDetail,
-      timeRange,
-      timeData[timeRange],
-      true
-    );
+    const { svg, aumChanges, svg_sharePrices, sharePriceChanges } =
+      await this.generateChartData(
+        fundDetail,
+        timeRange,
+        timeData[timeRange],
+        true,
+      );
 
     // get monthly states
     const monthlyStates = await this.calcMonthlyData(fundDetail);
@@ -71,7 +97,7 @@ export class FundService {
     const assets = fundDetail.portfolio.holdings.map((holding) => ({
       aum: Number(holding.amount) * Number(holding.asset.price.price),
       ...holding.asset,
-      amount: Number(holding.amount)
+      amount: Number(holding.amount),
     }));
     assets.sort((a, b) => b.aum - a.aum);
     overview.assets = assets;
@@ -96,10 +122,10 @@ export class FundService {
       fundDetail,
       timeRange,
       timeData[timeRange],
-      false
+      false,
     );
 
-    return {aumHistory, sharePriceHistory, timeHistory}
+    return { aumHistory, sharePriceHistory, timeHistory };
   }
 
   async getTotalFunds() {
@@ -178,11 +204,13 @@ export class FundService {
         i.toString(),
         timeRange,
       );
-      portfolio?.holdings?.map(holding => {
-        if (holding.asset?.id === "0x2170ed0880ac9a755fd29b2688956bd959f933f8") {
-          console.log("ethereum price: ", holding?.price?.price, i, ethPrice);
+      portfolio?.holdings?.map((holding) => {
+        if (
+          holding.asset?.id === '0x2170ed0880ac9a755fd29b2688956bd959f933f8'
+        ) {
+          console.log('ethereum price: ', holding?.price?.price, i, ethPrice);
         }
-      })
+      });
       aum *= Number(ethPrice);
       data.push(aum);
       data_shares.push(aum / Number(shares.totalSupply || 1));
@@ -261,7 +289,7 @@ export class FundService {
 
   async getTopFunds() {
     const topFunds = this.currencyService.allFunds.slice(0, 10);
-    return  this.constructFundOverviewResponse(topFunds);
+    return this.constructFundOverviewResponse(topFunds);
   }
 
   async getAllFunds(): Promise<FundOverviewResponse[]> {
@@ -269,7 +297,7 @@ export class FundService {
   }
 
   private constructFundOverviewResponse(funds: FundDto[]) {
-    const fundData: FundOverviewResponse[] = funds.map(fund => {
+    const fundData: FundOverviewResponse[] = funds.map((fund) => {
       return {
         id: fund.id,
         inception: fund.inception,
@@ -284,9 +312,111 @@ export class FundService {
         sharePrice: fund.sharePrice,
         sharePrice1WAgo: fund.sharePrice1WAgo,
         totalShares: fund.totalShares,
-        totalShareSupply: fund.totalShareSupply
-      }
-    })
+        totalShareSupply: fund.totalShareSupply,
+        image: fund.image,
+        category: fund.category
+      };
+    });
     return fundData;
+  }
+
+  /// DB actions and queries
+  async getFundMeta(address: string) {
+    const fund = await this.findOneFundByAddress(address);
+    if (!fund) {
+      this.logger.warn('Fund not found');
+      // throw new BadRequestException('Fund not found');
+      return;
+    }
+    this.logger.log(`Fund found: address is ${fund.address}`);
+    return fund;
+  }
+
+  async createOrUpdate(
+    updateFundDto: UpdateFundDto,
+    file: Express.Multer.File,
+  ) {
+    this.walletService.verifySigner(
+      updateFundDto.userAddress,
+      updateFundDto.signature,
+    );
+
+    const provider = new ethers.providers.JsonRpcProvider(
+      'https://bsc-dataseed1.defibit.io',
+    );
+    const contract = new ethers.Contract(
+      updateFundDto.address,
+      VaultLib.abi,
+      provider,
+    );
+    const fundOwner = await contract.getOwner();
+
+    if (fundOwner.toLowerCase() !== updateFundDto.userAddress.toLowerCase()) {
+      this.logger.error('You are not owner of this fund');
+
+      throw new UnauthorizedException({
+        message: 'Not owner of fund',
+        code: 'Invalid user',
+      });
+    }
+
+    let imageUrl: string;
+    if (file) {
+      imageUrl = await this.uploadImageToS3(file);
+    }
+    delete updateFundDto.signature;
+    delete updateFundDto.file;
+    delete updateFundDto.userAddress;
+
+    const fund = await this.findOneFundByAddress(updateFundDto.address);
+    if (fund) {
+      await this.fundRepository.update(
+        {
+          address: ILike(updateFundDto.address),
+        },
+        { ...updateFundDto, image: imageUrl ?? '' },
+      );
+
+      return this.findOneFundByAddress(updateFundDto.address);
+    }
+    return this.createNewFund({ ...updateFundDto, image: imageUrl ?? '' });
+  }
+
+  private async createNewFund(data: any): Promise<Fund> {
+    return await this.fundRepository.save(data);
+  }
+
+  private async findOneFundByAddress(address: string) {
+    this.walletService.verifyAddress(address);
+    return await this.fundRepository.findOneBy({ address: ILike(address) });
+  }
+
+  private async uploadImageToS3(file: Express.Multer.File) {
+    try {
+      const extension = file.originalname.split('.').pop();
+      const filePath = `fund-${Date.now().toString()}.${extension}`;
+      const fileUrl = await this.bucketService.putObject({
+        path: filePath,
+        file,
+      });
+      return fileUrl;
+    } catch (err) {
+      this.logger.error(
+        `Failed to upload media [${file.originalname}], size: [${file.size}] to s3`,
+      );
+
+      throw new InternalServerErrorException('Failed to upload image');
+    }
+  }
+
+  async findAllMeta() {
+    const funds = await this.fundRepository.find();
+    if (!funds) {
+      this.logger.warn('Fund not found');
+      // throw new BadRequestException('Fund not found');
+      return [];
+    }
+    this.logger.log(`Funds found: count is ${funds.length}`);
+    return funds;
   }
 }

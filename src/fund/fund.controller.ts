@@ -1,7 +1,11 @@
-import { Controller, Get, Post, Query, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, Patch, Param, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FundService } from './fund.service';
 import { FundOverviewDto, FundOverviewWithHistoryDto } from './dto/fund.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { UpdateFundDto } from './dto/update-fund.dto';
+import { ImageValidationPipe } from 'src/user/pipes/file-type.pipe';
+import { Fund } from './entity/fund.entity';
 
 @ApiTags('Fund')
 @Controller('fund')
@@ -11,6 +15,11 @@ export class FundController {
   @Get()
   findAll() {
     return this.fundService.getAllFunds();
+  }
+
+  @Get('/meta')
+  getAllFundMeta() {
+    return this.fundService.findAllMeta();
   }
   
   @Get('/top-dexfunds')
@@ -31,6 +40,16 @@ export class FundController {
   @Get(':id/chart')
   getFundChart(@Param('id') id: string, @Query() query: FundOverviewWithHistoryDto) {
     return this.fundService.getFundChartData(id, query.timeRange);
+  }
+
+  @Post()
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file'))
+  createOrUpdate(
+    @Body() updateUserDto: UpdateFundDto,
+    @UploadedFile(ImageValidationPipe) file?: Express.Multer.File,
+  ): Promise<Fund> {
+    return this.fundService.createOrUpdate(updateUserDto, file);
   }
 
 }

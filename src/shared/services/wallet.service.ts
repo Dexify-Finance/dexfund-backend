@@ -23,6 +23,7 @@ export class WalletService {
     }
 
     const signerAddr = ethers.utils.verifyMessage(address, signature);
+    
     if (signerAddr !== address) {
       this.logger.error('No token provided for auth request');
 

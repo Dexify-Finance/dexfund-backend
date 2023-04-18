@@ -13,6 +13,8 @@ import { CurrencyDto, CurrencyPriceDto } from 'src/graphql/dto/currency';
 import { GraphqlService } from 'src/graphql/graphql.service';
 import { FundDto } from 'src/graphql/dto/fund';
 import { FundOverviewWithHistoryResponse } from 'src/fund/dto/fund.dto';
+import { FundService } from 'src/fund/fund.service';
+import { FundCategoryType } from 'src/fund/entity/fund.entity';
 
 export type TimeData = {
   [key: string]: {
@@ -45,6 +47,7 @@ export type MonthlyEthPriceHistory = {
 let app: INestApplicationContext;
 let currencyService: CurrencyService;
 let graphqlService: GraphqlService;
+let fundService: FundService;
 let isBusy: boolean;
 
 const normalizationTime = (timeRange: string) => {
@@ -159,6 +162,8 @@ async function getAllFunds(ethPriceHistories: any, currentEthPrice: string, time
   const totalFunds = await graphqlService.getTotalFunds(from);
   const history = ethPriceHistories["1W"];
 
+  const fundMetas = await fundService.findAllMeta();
+
   const funds = totalFunds.map(fund => {
     let aum = fund.portfolio.holdings.reduce(
       (acc, cur) => acc + Number(cur.amount) * Number(cur.asset.price.price),
@@ -168,14 +173,14 @@ async function getAllFunds(ethPriceHistories: any, currentEthPrice: string, time
     
     aum *= Number(currentEthPrice);
 
-    let aum1WAgo = fund.firstPortfolio[0].holdings.reduce(
+    let aum1WAgo = fund.firstPortfolio?.[0]?.holdings?.reduce(
       (acc, cur) => acc + Number(cur.amount) * Number(cur.price.price),
       0,
     );
     let totalShareSupply1WAgo = Number(fund.firstShare?.[0]?.totalSupply || 0);
     
     const prices = history[`price_history_${from}`];
-    aum1WAgo *= Number(prices[0].price);
+    aum1WAgo *= Number(prices?.[0]?.price || 0);
 
     // get assets
     const assets = fund.portfolio.holdings.map(holding => ({
@@ -184,6 +189,7 @@ async function getAllFunds(ethPriceHistories: any, currentEthPrice: string, time
     }));
     assets.sort((a, b) => b.aum - a.aum);
 
+    const meta = fundMetas.find(item => item.address === fund.id);
     return {
       aum,
       aum1WAgo,
@@ -192,11 +198,14 @@ async function getAllFunds(ethPriceHistories: any, currentEthPrice: string, time
       sharePrice: totalShareSupply > 0 ? aum / totalShareSupply : 0,
       sharePrice1WAgo: totalShareSupply1WAgo > 0 ? aum1WAgo / totalShareSupply1WAgo : 0,
       assets,
-      ...fund
+      ...fund,
+      image: meta?.image,
+      category: meta?.category || FundCategoryType.ICON
     }
   });
 
   funds.sort((a, b) => b.aum - a.aum);
+
   return funds;
 }
 
@@ -211,9 +220,12 @@ async function run() {
     if (!graphqlService) {
       graphqlService = app.get(GraphqlService);
     }
+    if (!fundService) {
+      fundService = app.get(FundService);
+    }
 
     isBusy = true;
-    if (app && currencyService && graphqlService) {
+    if (app && currencyService && graphqlService && fundService) {
       const timeData = getNormalizedTimes();
       console.log("Prepared timeData: ")
       const ethPriceHistories = await getEthPriceHistories(timeData);

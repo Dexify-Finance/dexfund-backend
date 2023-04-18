@@ -2,6 +2,7 @@ import { ApiProperty } from "@nestjs/swagger";
 import { AssetDto } from "src/graphql/dto/asset";
 import { ComptrollerDto } from "src/graphql/dto/comptroller";
 import { FundUserDto } from "src/graphql/dto/fundUser";
+import { FundCategoryType } from "../entity/fund.entity";
 
 export class FundOverviewDto {
     id: string;
@@ -30,6 +31,8 @@ export class FundOverviewResponse {
     aum?: number;
     aum1WAgo?: number;
     totalShares?: number;
+    image?: string;
+    category?: FundCategoryType;
 
     sharePrice?: number;
     sharePrice1WAgo?: number;
