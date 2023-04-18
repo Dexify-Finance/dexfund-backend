@@ -2,7 +2,7 @@ import { Controller, Get, Param, Query } from '@nestjs/common';
 import { getIntervalForTimeRange } from 'src/utils/helper';
 import { CurrencyService } from './currency.service';
 import { CurrencyHistoryDto } from './dto/currencyHistory.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Currency')
 @Controller('currency')

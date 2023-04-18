@@ -25,7 +25,7 @@ export const TimeRange = {
   ALL: 'ALL',
 };
 
-export const FETCH_INTERVAL = 30 * 60 * 1000; // 10min
+export const FETCH_INTERVAL = 5 * 60 * 1000; // 10min
 
 export const SparkLineConfig = {
   width: 270,
