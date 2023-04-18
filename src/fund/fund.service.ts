@@ -64,7 +64,7 @@ export class FundService {
       accessor: fundDetail.accessor,
       creator: fundDetail.creator,
       manager: fundDetail.manager,
-      totalShares: Number(fundDetail.lastShare[0].totalSupply),
+      totalShares: Number(fundDetail.lastShare?.[0]?.totalSupply),
     };
 
     const fundMeta = await this.findOneFundByAddress(fundDetail.id);
