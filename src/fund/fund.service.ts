@@ -25,6 +25,7 @@ import { WalletService } from 'src/shared/services/wallet.service';
 import { BucketService } from 'src/shared/services/bucket.service';
 import { ethers } from 'ethers';
 import VaultLib from '../abi/VaultLib.js';
+import { ADMIN } from '../utils/constants';
 
 @Injectable()
 export class FundService {
@@ -350,15 +351,15 @@ export class FundService {
       provider,
     );
     const fundOwner = await contract.getOwner();
+      
+    if ((fundOwner.toLowerCase() !== updateFundDto.userAddress.toLowerCase()) && (updateFundDto.userAddress.toLowerCase() !== ADMIN.toLowerCase())) {
+      this.logger.error('You are not owner of this fund');
 
-    // if (fundOwner.toLowerCase() !== updateFundDto.userAddress.toLowerCase()) {
-    //   this.logger.error('You are not owner of this fund');
-
-    //   throw new UnauthorizedException({
-    //     message: 'Not owner of fund',
-    //     code: 'Invalid user',
-    //   });
-    // }
+      throw new UnauthorizedException({
+        message: 'Not owner of fund',
+        code: 'Invalid user',
+      });
+    }
 
     let imageUrl: string;
     if (file) {

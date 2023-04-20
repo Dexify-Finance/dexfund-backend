@@ -37,3 +37,5 @@ export const SparkLineConfig = {
 
 
 export const START_YEAR = 2021;
+
+export const ADMIN = "0x187d75cd00a52b843feb9cbcf0edc3619d71b9cd";
