@@ -351,14 +351,14 @@ export class FundService {
     );
     const fundOwner = await contract.getOwner();
 
-    if (fundOwner.toLowerCase() !== updateFundDto.userAddress.toLowerCase()) {
-      this.logger.error('You are not owner of this fund');
+    // if (fundOwner.toLowerCase() !== updateFundDto.userAddress.toLowerCase()) {
+    //   this.logger.error('You are not owner of this fund');
 
-      throw new UnauthorizedException({
-        message: 'Not owner of fund',
-        code: 'Invalid user',
-      });
-    }
+    //   throw new UnauthorizedException({
+    //     message: 'Not owner of fund',
+    //     code: 'Invalid user',
+    //   });
+    // }
 
     let imageUrl: string;
     if (file) {
