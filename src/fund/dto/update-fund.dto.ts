@@ -24,4 +24,8 @@ export class UpdateFundDto {
   @ApiProperty({ required: false })
   @Expose()
   category: FundCategoryType;
+
+  @ApiProperty({ required: false })
+  @Expose()
+  description: string;
 }

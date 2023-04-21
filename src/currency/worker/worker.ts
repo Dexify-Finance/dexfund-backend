@@ -200,7 +200,8 @@ async function getAllFunds(ethPriceHistories: any, currentEthPrice: string, time
       assets,
       ...fund,
       image: meta?.image,
-      category: meta?.category || FundCategoryType.ICON
+      category: meta?.category || FundCategoryType.ICON,
+      description: meta?.description
     }
   });
 

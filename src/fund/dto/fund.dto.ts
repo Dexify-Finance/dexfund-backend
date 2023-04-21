@@ -33,6 +33,7 @@ export class FundOverviewResponse {
     totalShares?: number;
     image?: string;
     category?: FundCategoryType;
+    description?: string;
 
     sharePrice?: number;
     sharePrice1WAgo?: number;

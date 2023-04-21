@@ -16,6 +16,7 @@ export interface FundDto {
 
   image?: string;
   category?: FundCategoryType;
+  description?: string;
   portfolioHistory?: PortfolioDto[];
   lastPortfolio?: PortfolioDto[];
   firstPortfolio?: PortfolioDto[];

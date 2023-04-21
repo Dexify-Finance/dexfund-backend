@@ -25,7 +25,7 @@ import { WalletService } from 'src/shared/services/wallet.service';
 import { BucketService } from 'src/shared/services/bucket.service';
 import { ethers } from 'ethers';
 import VaultLib from '../abi/VaultLib.js';
-import { ADMIN } from '../utils/constants';
+import { ADMINS } from '../utils/constants';
 
 @Injectable()
 export class FundService {
@@ -71,7 +71,7 @@ export class FundService {
     const fundMeta = await this.findOneFundByAddress(fundDetail.id);
     overview.image = fundMeta?.image;
     overview.category = fundMeta?.category;
-
+    overview.description = fundMeta?.description;
     // calc aum
     const aum = await this.calcAUM(fundDetail.portfolio);
     overview.aum = aum;
@@ -315,7 +315,8 @@ export class FundService {
         totalShares: fund.totalShares,
         totalShareSupply: fund.totalShareSupply,
         image: fund.image,
-        category: fund.category
+        category: fund.category,
+        description: fund.description
       };
     });
     return fundData;
@@ -352,7 +353,7 @@ export class FundService {
     );
     const fundOwner = await contract.getOwner();
       
-    if ((fundOwner.toLowerCase() !== updateFundDto.userAddress.toLowerCase()) && (updateFundDto.userAddress.toLowerCase() !== ADMIN.toLowerCase())) {
+    if ((fundOwner.toLowerCase() !== updateFundDto.userAddress.toLowerCase()) && (!ADMINS.find(item => item.toLowerCase() === updateFundDto.userAddress.toLowerCase()))) {
       this.logger.error('You are not owner of this fund');
 
       throw new UnauthorizedException({

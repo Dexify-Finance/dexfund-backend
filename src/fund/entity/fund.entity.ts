@@ -28,5 +28,10 @@ export class Fund {
     @Column({
         nullable: true,
     })
-    image: string
+    image: string;
+
+    @Column({
+        nullable: true,
+    })
+    description: string;
 }
