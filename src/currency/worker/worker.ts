@@ -21,7 +21,7 @@ export type TimeData = {
     from: number;
     to: number;
     interval: number;
-  }
+  };
 };
 
 export type AssetPriceHistory = {
@@ -34,13 +34,13 @@ export type AssetPriceHistory = {
 
 export type EthPriceHistory = {
   [key: string]: {
-    [key: string]: CurrencyPriceDto[]
-  }
-}
+    [key: string]: CurrencyPriceDto[];
+  };
+};
 
 export type MonthlyEthPriceHistory = {
-  [key: string]: CurrencyPriceDto[]
-}
+  [key: string]: CurrencyPriceDto[];
+};
 
 // Fetch eth price history and other coins price history intervally
 
@@ -92,8 +92,8 @@ const getEthPriceHistory = async (
 const getEthPriceHistories = async (timeData: TimeData) => {
   const ethPriceHistories = {};
   const times = Object.entries(TimeRange);
-  
-  for (let i = 0; i < times.length; i ++) {
+
+  for (let i = 0; i < times.length; i++) {
     const time = timeData[times[i][1]];
     const ethPriceHistory = await getEthPriceHistory(
       time.from,
@@ -156,21 +156,25 @@ const getAssetPriceHistories = async (
   return assetPriceHistories;
 };
 
-async function getAllFunds(ethPriceHistories: any, currentEthPrice: string, timeData: TimeData) {
-  const { from, to, interval } = timeData["1W"];
+async function getAllFunds(
+  ethPriceHistories: any,
+  currentEthPrice: string,
+  timeData: TimeData,
+) {
+  const { from, to, interval } = timeData['1W'];
 
   const totalFunds = await graphqlService.getTotalFunds(from);
-  const history = ethPriceHistories["1W"];
+  const history = ethPriceHistories['1W'];
 
   const fundMetas = await fundService.findAllMeta();
 
-  const funds = totalFunds.map(fund => {
+  const funds = totalFunds.map((fund) => {
     let aum = fund.portfolio.holdings.reduce(
       (acc, cur) => acc + Number(cur.amount) * Number(cur.asset.price.price),
       0,
     );
     let totalShareSupply = Number(fund.shares.totalSupply || 0);
-    
+
     aum *= Number(currentEthPrice);
 
     let aum1WAgo = fund.firstPortfolio?.[0]?.holdings?.reduce(
@@ -178,31 +182,33 @@ async function getAllFunds(ethPriceHistories: any, currentEthPrice: string, time
       0,
     );
     let totalShareSupply1WAgo = Number(fund.firstShare?.[0]?.totalSupply || 0);
-    
+
     const prices = history[`price_history_${from}`];
     aum1WAgo *= Number(prices?.[0]?.price || 0);
 
     // get assets
-    const assets = fund.portfolio.holdings.map(holding => ({
+    const assets = fund.portfolio.holdings.map((holding) => ({
       aum: Number(holding.amount) * Number(holding.asset.price.price),
-      ...holding.asset
+      ...holding.asset,
     }));
     assets.sort((a, b) => b.aum - a.aum);
 
-    const meta = fundMetas.find(item => item.address === fund.id);
+    const meta = fundMetas.find((item) => item.address === fund.id);
     return {
       aum,
       aum1WAgo,
       totalShareSupply,
       totalShareSupply1WAgo,
       sharePrice: totalShareSupply > 0 ? aum / totalShareSupply : 0,
-      sharePrice1WAgo: totalShareSupply1WAgo > 0 ? aum1WAgo / totalShareSupply1WAgo : 0,
+      sharePrice1WAgo:
+        totalShareSupply1WAgo > 0 ? aum1WAgo / totalShareSupply1WAgo : 0,
       assets,
       ...fund,
       image: meta?.image,
-      category: meta?.category || FundCategoryType.ICON,
-      description: meta?.description
-    }
+      category:
+        meta?.category !== undefined ? meta?.category : FundCategoryType.ICON,
+      description: meta?.description,
+    };
   });
 
   funds.sort((a, b) => b.aum - a.aum);
@@ -228,23 +234,27 @@ async function run() {
     isBusy = true;
     if (app && currencyService && graphqlService && fundService) {
       const timeData = getNormalizedTimes();
-      console.log("Prepared timeData: ")
+      console.log('Prepared timeData: ');
       const ethPriceHistories = await getEthPriceHistories(timeData);
-      console.log("Prepared eth prices: ")
+      console.log('Prepared eth prices: ');
 
       const assets = await currencyService.getAssets();
-      console.log("Prepared assets: ")
+      console.log('Prepared assets: ');
       const currentEthPrice = await currencyService.getCurrentEthPrice();
-      console.log("Prepared current eth price: ")
-      const allFunds = await getAllFunds(ethPriceHistories, currentEthPrice, timeData);
-      console.log("Prepared all funds: ")
+      console.log('Prepared current eth price: ');
+      const allFunds = await getAllFunds(
+        ethPriceHistories,
+        currentEthPrice,
+        timeData,
+      );
+      console.log('Prepared all funds: ');
       const monthlyEthPrices = await currencyService.getMonthlyEthPrices();
-      console.log("Prepared monthly eth prices: ")
+      console.log('Prepared monthly eth prices: ');
       // const assetPriceHistories = await getAssetPriceHistories(
       //   assets,
       //   timeData,
       // );
-      console.log("end worker: ")
+      console.log('end worker: ');
 
       parentPort.postMessage({
         timeData,
@@ -253,7 +263,7 @@ async function run() {
         assets,
         assetPriceHistories: [],
         monthlyEthPrices,
-        allFunds
+        allFunds,
         // assetPriceHistories,
       });
     }

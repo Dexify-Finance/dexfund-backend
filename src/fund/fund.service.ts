@@ -18,7 +18,7 @@ import { SparkLineConfig } from 'src/utils/constants';
 import { ShareStateDto } from 'src/graphql/dto/share';
 import { FundDto as GraphQLFundDto } from 'src/graphql/dto/fund';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Fund } from './entity/fund.entity';
+import { Fund, FundCategoryType } from './entity/fund.entity';
 import { ILike, Repository } from 'typeorm';
 import { UpdateFundDto } from './dto/update-fund.dto';
 import { WalletService } from 'src/shared/services/wallet.service';
@@ -431,5 +431,16 @@ export class FundService {
     }
     this.logger.log(`Funds found: count is ${funds.length}`);
     return funds;
+  }
+
+  async getFundsByCategory(category: FundCategoryType, limit: number) {
+    const funds = this.currencyService.allFunds.filter(fund => fund.category === category);
+    funds.sort((a, b) => b.aum - a.aum);
+
+    if (limit) {
+      return funds.slice(0, limit);
+    } else {
+      return funds;
+    }
   }
 }

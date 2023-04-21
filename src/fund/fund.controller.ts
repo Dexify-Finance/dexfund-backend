@@ -5,7 +5,7 @@ import { ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateFundDto } from './dto/update-fund.dto';
 import { ImageValidationPipe } from 'src/user/pipes/file-type.pipe';
-import { Fund } from './entity/fund.entity';
+import { Fund, FundCategoryType } from './entity/fund.entity';
 
 @ApiTags('Fund')
 @Controller('fund')
@@ -25,6 +25,11 @@ export class FundController {
   @Get('/top-dexfunds')
   getTopDexfund() {
     return this.fundService.getTopFunds();
+  }
+
+  @Get('/funds/:category')
+  getFundsByCategory(@Param('category') category: FundCategoryType, @Query('limit') limit: number) {
+    return this.fundService.getFundsByCategory(category, limit);
   }
 
   @Get(':id')
