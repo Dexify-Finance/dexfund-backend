@@ -372,11 +372,22 @@ export class FundService {
 
     const fund = await this.findOneFundByAddress(updateFundDto.address);
     if (fund) {
+      let data: Partial<Fund> = {};
+      if (updateFundDto.category !== undefined) {
+        data.category = updateFundDto.category;
+      }
+      if (updateFundDto.description) {
+        data.description = updateFundDto.description;
+      }
+      if (updateFundDto.file) {
+        data.image = imageUrl;
+      }
+      
       await this.fundRepository.update(
         {
           address: ILike(updateFundDto.address),
         },
-        { ...updateFundDto, image: imageUrl ?? '' },
+        data,
       );
 
       return this.findOneFundByAddress(updateFundDto.address);
