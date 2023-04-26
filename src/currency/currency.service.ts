@@ -5,8 +5,9 @@ import { START_YEAR, TimeRange } from 'src/utils/constants';
 import { getIntervalForTimeRange } from 'src/utils/helper';
 import { Worker } from 'worker_threads';
 import { AssetPriceHistory, EthPriceHistory, MonthlyEthPriceHistory, TimeData } from './worker/worker';
-import { CurrencyPriceDto } from 'src/graphql/dto/currency';
+import { CurrencyPriceCandleDto, CurrencyPriceDto } from 'src/graphql/dto/currency';
 import { FundDto } from 'src/fund/dto/fund.dto';
+import { AssetPriceCandleDto } from 'src/graphql/dto/assetPrice';
 
 @Injectable()
 export class CurrencyService {
@@ -18,6 +19,8 @@ export class CurrencyService {
   assetPriceHistories: AssetPriceHistory[];
   currentEthPrice: string;
   allFunds: (FundDto)[];
+  monthlyEthPriceCandles: CurrencyPriceCandleDto[];
+  monthlyAssetsPricesCandles: {asset: AssetDto, data: AssetPriceCandleDto[]}[];
   
   constructor(private readonly graphqlSerivce: GraphqlService) {}
 
@@ -30,21 +33,29 @@ export class CurrencyService {
       workerData: {},
     });
     worker.on('message', (result: {
-      timeData: TimeData,
-      currentEthPrice: string,
-      ethPriceHistories: EthPriceHistory,
-      assets: AssetDto[],
-      assetPriceHistories: AssetPriceHistory[],
-      monthlyEthPrices: MonthlyEthPriceHistory,
-      allFunds: (FundDto)[]
+      type: 'Basic' | 'Monthly',
+      timeData?: TimeData,
+      currentEthPrice?: string,
+      ethPriceHistories?: EthPriceHistory,
+      assets?: AssetDto[],
+      assetPriceHistories?: AssetPriceHistory[],
+      monthlyEthPrices?: MonthlyEthPriceHistory,
+      allFunds?: (FundDto)[],
+      monthlyEthPriceCandles?: CurrencyPriceCandleDto[],
+      monthlyAssetsPricesCandles?: {asset: AssetDto, data: AssetPriceCandleDto[]}[],
     }) => {
-      this.timeData = result.timeData;
-      this.currentEthPrice = result.currentEthPrice;
-      this.ethPriceHistories = result.ethPriceHistories;
-      this.assets = result.assets;
-      this.assetPriceHistories = result.assetPriceHistories;
-      this.monthlyEthPriceHistories = result.monthlyEthPrices;
-      this.allFunds = result.allFunds;
+      if (result.type === 'Basic') {
+        this.timeData = result.timeData;
+        this.currentEthPrice = result.currentEthPrice;
+        this.ethPriceHistories = result.ethPriceHistories;
+        this.assets = result.assets;
+        this.assetPriceHistories = result.assetPriceHistories;
+        this.monthlyEthPriceHistories = result.monthlyEthPrices;
+        this.allFunds = result.allFunds;
+      } else if (result.type === 'Monthly') {
+        this.monthlyEthPriceCandles = result.monthlyEthPriceCandles;
+        this.monthlyAssetsPricesCandles = result.monthlyAssetsPricesCandles;
+      }
     });
     worker.on('exit', (code) => {
     });

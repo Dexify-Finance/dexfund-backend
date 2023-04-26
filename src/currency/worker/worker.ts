@@ -257,6 +257,7 @@ async function run() {
       console.log('end worker: ');
 
       parentPort.postMessage({
+        type: 'Basic',
         timeData,
         currentEthPrice,
         ethPriceHistories,
@@ -273,9 +274,53 @@ async function run() {
   }
 }
 
-run();
+async function monthlyPrices() {
+  try {
+    isBusy = true;
+    console.log('start monthly: ', Date.now());
+    // monthly eth prices
+    const monthlyEthPriceCandles =
+      await graphqlService.getMonthlyEthPriceCandles();
+    console.log('monthly eth price candle: ', monthlyEthPriceCandles.length);
+    // monthly assets prices
+    const assets = await graphqlService.getAssets();
+
+    const assetsPricesCandles = await Promise.all(
+      assets.map(async (asset) => {
+        const data = await graphqlService.getMonthlyAssetPriceCandles(asset.id);
+        return {
+          asset,
+          data
+        }
+      }),
+    );
+    console.log('monthly asset price candle: ', assetsPricesCandles.length);
+
+    parentPort.postMessage({
+      type: 'Monthly',
+      monthlyEthPriceCandles,
+      monthlyAssetsPricesCandles: assetsPricesCandles
+    });
+  } catch (err) {
+    console.log('monthly error: ', err);
+  } finally {
+    isBusy = false;
+    console.log('end monthly: ', Date.now());
+  }
+}
+
+async function main() {
+  await run();
+  await monthlyPrices();
+}
+
+main();
 setInterval(() => {
   if (!isBusy) {
     run();
   }
 }, FETCH_INTERVAL);
+
+setInterval(() => {
+  monthlyPrices();
+}, 24 * 3600 * 15 * 1000); // 15d

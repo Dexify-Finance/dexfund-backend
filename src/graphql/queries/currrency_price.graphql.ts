@@ -74,3 +74,18 @@ export const monthlyEthPriceQuery = (): DocumentNode => {
     }
   `;
 }
+
+export const monthlyEthPricesCandleQuery = (): DocumentNode => {
+  return gql`
+    query getMonthlyEthPricesCandleQuery {
+      monthlyCurrencyPriceCandles(where:{currency: "ETH"}) {
+        from
+        to
+        open
+        high
+        low
+        close
+      }
+    }
+  `
+}

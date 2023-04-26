@@ -51,3 +51,25 @@ const constructSubQuery = (timestamp: string): string => {
       }
     `;
 };
+
+
+export const monthlyAssetPriceCandleQuery = (id: string): DocumentNode => {
+  return gql`
+    query getMonthlyAssetPriceCandle {
+      monthlyAssetPriceCandles(where:{asset: "${id}"}) {
+        asset {
+          id
+          decimals
+          symbol
+          name
+        }
+        from
+        to
+        open
+        high
+        low
+        close
+      }
+    }
+  `
+}

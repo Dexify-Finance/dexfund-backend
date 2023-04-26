@@ -51,7 +51,10 @@ export class FundOverviewWithHistoryResponse extends FundOverviewResponse {
     sharesHistory?: number[];
     sharePriceHistory?: number[];
     timeHistory?: number[];
-    monthlyStates?: Monthly[]
+    monthlyStates?: Monthly[];
+
+    volatility?: number;
+    sharpeRatio?: number;
 }
 
 

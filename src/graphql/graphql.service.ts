@@ -13,16 +13,18 @@ import {
 } from './queries/fund_overview.graphql';
 import fetch from 'cross-fetch';
 import { FundDto } from './dto/fund';
-import { CurrencyDto } from './dto/currency';
+import { CurrencyDto, CurrencyPriceCandleDto } from './dto/currency';
 import {
   currency,
   currencyPriceHistoryQuery,
   monthlyEthPriceQuery,
+  monthlyEthPricesCandleQuery,
 } from './queries/currrency_price.graphql';
-import { assetPriceHistoryQuery, assetsQuery } from './queries/assets.graphql';
+import { assetPriceHistoryQuery, assetsQuery, monthlyAssetPriceCandleQuery } from './queries/assets.graphql';
 import { AssetDto } from './dto/asset';
 import { allFunds } from './queries/all_funds.graphql';
 import { _1W } from 'src/utils/constants';
+import { AssetPriceCandleDto } from './dto/assetPrice';
 
 @Injectable()
 export class GraphqlService {
@@ -158,4 +160,32 @@ export class GraphqlService {
 
     return result.data.currency as CurrencyDto[];
   }
+
+  async getMonthlyAssetPriceCandles(id: string) {
+    const result = await this.client.query({
+      query: monthlyAssetPriceCandleQuery(id),
+    });
+
+
+    if (result.error || (result.errors && result.errors.length > 0)) {
+      throw Error;
+    }
+
+    return result.data.monthlyAssetPriceCandles as AssetPriceCandleDto[];
+  }
+
+  async getMonthlyEthPriceCandles() {
+    const result = await this.client.query({
+      query: monthlyEthPricesCandleQuery(),
+    });
+
+
+    if (result.error || (result.errors && result.errors.length > 0)) {
+      throw Error;
+    }
+
+
+    return result.data.monthlyCurrencyPriceCandles as CurrencyPriceCandleDto[];
+  }
 }
+

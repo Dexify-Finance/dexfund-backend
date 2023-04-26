@@ -26,6 +26,8 @@ import { BucketService } from 'src/shared/services/bucket.service';
 import { ethers } from 'ethers';
 import VaultLib from '../abi/VaultLib.js';
 import { ADMINS } from '../utils/constants';
+import { AssetDto } from 'src/graphql/dto/asset';
+import { MonthlyStateDto } from 'src/graphql/dto/monthlyState';
 
 @Injectable()
 export class FundService {
@@ -102,7 +104,96 @@ export class FundService {
     }));
     assets.sort((a, b) => b.aum - a.aum);
     overview.assets = assets;
+
+    const { volatility, sharpeRatio } = this.getRisk(assets, fundDetail.monthlyStates);
+
+    console.log('volatility: ', volatility, sharpeRatio);
+
+    overview.sharpeRatio = sharpeRatio;
+    overview.volatility = volatility;
+    
     return overview;
+  }
+
+  getRisk(
+    assets: (AssetDto & { aum: number; amount: number })[],
+    monthlyStates: MonthlyStateDto[],
+  ) {
+    // Volatility
+    // Calculate the daily returns of each asset
+    const filteredPrices =
+      this.currencyService.monthlyAssetsPricesCandles.filter((item) =>
+        assets.find((asset) => item.asset.id === asset.id),
+      );
+
+    const assetReturns = {};
+    assets.map((asset) => {
+      assetReturns[asset.id] = [];
+      const assetPrices = filteredPrices.find(
+        (item) => item.asset.id === asset.id,
+      )?.data;
+      for (let i = 1; i < assetPrices.length; i++) {
+        const ethPrice1 = this.currencyService.monthlyEthPriceCandles.find(
+          (item) => item.to === assetPrices[i].to,
+        )?.close;
+        const ethPrice0 = this.currencyService.monthlyEthPriceCandles.find(
+          (item) => item.to === assetPrices[i - 1].to,
+        )?.close;
+
+        const monthlyReturn =
+          Number(assetPrices[i - 1].close) * Number(ethPrice0)
+            ? (Number(assetPrices[i].close) * Number(ethPrice1) -
+                Number(assetPrices[i - 1].close) * Number(ethPrice0)) /
+              (Number(assetPrices[i - 1].close) * Number(ethPrice0))
+            : 0;
+        assetReturns[asset.id].push({
+          ...assetPrices[i],
+          return: monthlyReturn,
+        });
+      }
+    });
+
+    // Prepare monthly asset weights
+    const portfolioWeights = [];
+    monthlyStates.map((state) => {
+      const { last, end } = state;
+      const assetWeights = {};
+      const aum = last.portfolio.holdings.reduce((curr, cur) => curr + Number(cur.amount) * Number(cur.price.price), 0);
+      last.portfolio.holdings.map(holding => {
+        const assetAum = Number(holding.amount) * Number(holding.price.price);
+        assetWeights[holding.asset.id] = aum ? assetAum / aum : 0;
+      });
+      portfolioWeights.push({
+        to: end,
+        assetWeights
+      })
+    });
+
+    // Calculate the portfolio returns for each day
+    const portfolioReturns = [];
+    for (let i = 0; i < monthlyStates.length; i++) {
+      let monthlyPortfolioReturn = 0;
+      const {assetWeights, to} = portfolioWeights.find(item => item.to === monthlyStates[i].end);
+
+      for (const asset in assetWeights) {
+        const weight = assetWeights[asset];
+        const assetReturn = assetReturns[asset]?.find((item: any) => item.to === to);
+        monthlyPortfolioReturn += Number(weight) * Number(assetReturn?.return || 0);
+      }
+      portfolioReturns.push(monthlyPortfolioReturn);
+    }
+
+    // Calculate the standard deviation of the portfolio returns
+    const meanReturn = portfolioReturns.reduce((a, b) => a + b) / portfolioReturns.length;
+    const variance = portfolioReturns.reduce((a, b) => a + (b - meanReturn) ** 2, 0) / (portfolioReturns.length - 1);
+    const standardDeviation = Math.sqrt(variance);
+
+    // Sharp
+    // Calculate the risk-free rate of return (e.g., US Treasury Bill yield)
+    const riskFreeRate = 0.01;
+    const sharpeRatio = (meanReturn - riskFreeRate) / standardDeviation;
+
+    return {volatility: standardDeviation, sharpeRatio};
   }
 
   async getFundChartData(id: string, timeRange: string) {
@@ -205,13 +296,7 @@ export class FundService {
         i.toString(),
         timeRange,
       );
-      portfolio?.holdings?.map((holding) => {
-        if (
-          holding.asset?.id === '0x2170ed0880ac9a755fd29b2688956bd959f933f8'
-        ) {
-          console.log('ethereum price: ', holding?.price?.price, i, ethPrice);
-        }
-      });
+     
       aum *= Number(ethPrice);
       data.push(aum);
       data_shares.push(aum / Number(shares.totalSupply || 1));
@@ -316,7 +401,7 @@ export class FundService {
         totalShareSupply: fund.totalShareSupply,
         image: fund.image,
         category: fund.category,
-        description: fund.description
+        description: fund.description,
       };
     });
     return fundData;
@@ -352,8 +437,14 @@ export class FundService {
       provider,
     );
     const fundOwner = await contract.getOwner();
-      
-    if ((fundOwner.toLowerCase() !== updateFundDto.userAddress.toLowerCase()) && (!ADMINS.find(item => item.toLowerCase() === updateFundDto.userAddress.toLowerCase()))) {
+
+    if (
+      fundOwner.toLowerCase() !== updateFundDto.userAddress.toLowerCase() &&
+      !ADMINS.find(
+        (item) =>
+          item.toLowerCase() === updateFundDto.userAddress.toLowerCase(),
+      )
+    ) {
       this.logger.error('You are not owner of this fund');
 
       throw new UnauthorizedException({
@@ -382,7 +473,7 @@ export class FundService {
       if (updateFundDto.file) {
         data.image = imageUrl;
       }
-      
+
       await this.fundRepository.update(
         {
           address: ILike(updateFundDto.address),
@@ -434,7 +525,9 @@ export class FundService {
   }
 
   async getFundsByCategory(category: FundCategoryType, limit: number) {
-    const funds = this.currencyService.allFunds.filter(fund => fund.category === category);
+    const funds = this.currencyService.allFunds.filter(
+      (fund) => fund.category === category,
+    );
     funds.sort((a, b) => b.aum - a.aum);
 
     if (limit) {

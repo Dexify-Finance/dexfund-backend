@@ -13,6 +13,9 @@ export const FundMonthlyDataFragment = gql`
       }
       portfolio {
         holdings {
+          asset {
+            id
+          }
           price {
             price
           }
