@@ -5,6 +5,7 @@ import {
   NormalizedCacheObject,
   HttpLink,
   ApolloQueryResult,
+  DefaultOptions
 } from '@apollo/client/core';
 import { GRAPHQL_SERVER } from 'src/utils/constants';
 import {
@@ -25,15 +26,26 @@ import { AssetDto } from './dto/asset';
 import { allFunds } from './queries/all_funds.graphql';
 import { _1W } from 'src/utils/constants';
 import { AssetPriceCandleDto } from './dto/assetPrice';
-
 @Injectable()
 export class GraphqlService {
   private client: ApolloClient<NormalizedCacheObject>;
 
   constructor() {
+    const defaultOptions: DefaultOptions = {
+      watchQuery: {
+        fetchPolicy: 'no-cache',
+        errorPolicy: 'ignore',
+      },
+      query: {
+        fetchPolicy: 'no-cache',
+        errorPolicy: 'all',
+      },
+    }
+
     this.client = new ApolloClient({
       link: new HttpLink({ uri: GRAPHQL_SERVER, fetch }),
       cache: new InMemoryCache(),
+      defaultOptions
     });
   }
 
