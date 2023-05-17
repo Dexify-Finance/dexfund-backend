@@ -184,7 +184,7 @@ export class FundService {
     }
 
     // Calculate the standard deviation of the portfolio returns
-    const meanReturn = portfolioReturns.reduce((a, b) => a + b) / portfolioReturns.length;
+    const meanReturn = portfolioReturns.reduce((a, b) => a + b, 0) / portfolioReturns.length;
     const variance = portfolioReturns.reduce((a, b) => a + (b - meanReturn) ** 2, 0) / (portfolioReturns.length - 1);
     const standardDeviation = Math.sqrt(variance);
 
