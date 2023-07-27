@@ -16,5 +16,6 @@ import { SharedModule } from 'src/shared/shared.module';
   ],
   controllers: [FundController],
   providers: [FundService],
+  exports: [FundService]
 })
 export class FundModule {}

@@ -20,6 +20,28 @@ export class Fund {
     address: string;
 
     @Column({
+        nullable: true,
+    })
+    name: string;
+
+    @Column({
+        nullable: true,
+    })
+    symbol: string;
+
+    @Column({
+        nullable: false,
+        length: ADDRESS_LENGTH,
+    })
+    comptroller: string;
+
+    @Column({
+        nullable: false,
+        length: ADDRESS_LENGTH,
+    })
+    owner: string;
+
+    @Column({
         nullable: false,
         default: FundCategoryType.ICON
     })

@@ -16,11 +16,6 @@ export class FundController {
   findAll() {
     return this.fundService.getAllFunds();
   }
-
-  @Get('/meta')
-  getAllFundMeta() {
-    return this.fundService.findAllMeta();
-  }
   
   @Get('/top-dexfunds')
   getTopDexfund() {
@@ -33,28 +28,18 @@ export class FundController {
   }
 
   @Get(':id')
-  getFundOverview(@Param() params: FundOverviewDto) {
-    return this.fundService.getFundOverview(params.id);
-  }
-
-  @Get(':id/history')
-  getFundOverviewWithHistory(@Param('id') id: string, @Query() query: FundOverviewWithHistoryDto) {
-    return this.fundService.getFundOverviewWithHistory(id, query.timeRange);
-  }
-
-  @Get(':id/chart')
-  getFundChart(@Param('id') id: string, @Query() query: FundOverviewWithHistoryDto) {
-    return this.fundService.getFundChartData(id, query.timeRange);
+  getFund(@Param() params: FundOverviewDto) {
+    return this.fundService.getFund(params.id);
   }
 
   @Post()
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('file'))
-  createOrUpdate(
+  updateFund(
     @Body() updateUserDto: UpdateFundDto,
     @UploadedFile(ImageValidationPipe) file?: Express.Multer.File,
   ): Promise<Fund> {
-    return this.fundService.createOrUpdate(updateUserDto, file);
+    return this.fundService.updateFund(updateUserDto, file);
   }
 
 }

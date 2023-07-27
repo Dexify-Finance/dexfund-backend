@@ -9,23 +9,23 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 export class CurrencyController {
   constructor(private readonly currencyService: CurrencyService) {}
 
-  @Get(':id/history')
-  getCurrencyPriceHistory(@Param('id') id: string, @Query() query: CurrencyHistoryDto) {
-    return this.currencyService.getCurrencyPriceHistory(id, Number(query.from), Number(query.to), getIntervalForTimeRange(query.interval));
-  }
+  // @Get(':id/history')
+  // getCurrencyPriceHistory(@Param('id') id: string, @Query() query: CurrencyHistoryDto) {
+  //   return this.currencyService.getCurrencyPriceHistory(id, Number(query.from), Number(query.to), getIntervalForTimeRange(query.interval));
+  // }
 
-  @Get()
-  startWorker() {
-    return this.currencyService.startWorkerThread();
-  }
+  // @Get()
+  // startWorker() {
+  //   return this.currencyService.startWorkerThread();
+  // }
 
-  @Get('/eth-price')
-  getEthPrice() {
-    return this.currencyService.getCurrentEthPrice();
-  }
+  // @Get('/eth-price')
+  // getEthPrice() {
+  //   return this.currencyService.getCurrentEthPrice();
+  // }
 
-  @Get('/monthly-eth-prices')
-  getMonthlyEthPrices() {
-    return this.currencyService.getSavedMonthlyEthPrices();
-  }
+  // @Get('/monthly-eth-prices')
+  // getMonthlyEthPrices() {
+  //   return this.currencyService.getSavedMonthlyEthPrices();
+  // }
 }

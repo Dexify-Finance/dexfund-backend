@@ -9,6 +9,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { FundModule } from './fund/fund.module';
 import { CurrencyModule } from './currency/currency.module';
 import { Logger } from '@nestjs/common';
+import { Web3Service } from './web3/web3.service';
 @Module({
   imports: [
     ConfigModule,
@@ -17,9 +18,9 @@ import { Logger } from '@nestjs/common';
     TwitterModule,
     ScheduleModule.forRoot(),
     FundModule,
-    CurrencyModule,
+    CurrencyModule
   ],
   controllers: [AppController],
-  providers: [AppService, Logger],
+  providers: [AppService, Logger, Web3Service],
 })
 export class AppModule {}

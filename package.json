@@ -46,6 +46,8 @@
     "cross-fetch": "^3.1.5",
     "dotenv": "^16.0.3",
     "ethers": "^5.7.2",
+    "everscale-inpage-provider": "^0.3.61",
+    "everscale-standalone-client": "^2.1.21",
     "express-basic-auth": "^1.2.1",
     "graphql": "^16.6.0",
     "nest-winston": "^1.8.0",

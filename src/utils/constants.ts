@@ -1,4 +1,4 @@
-export const ADDRESS_LENGTH = 42;
+export const ADDRESS_LENGTH = 66;
 export const GRAPHQL_SERVER =
   'https://api.thegraph.com/subgraphs/name/trust0212/dexify-finance-subgraph';
 
