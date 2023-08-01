@@ -18,11 +18,11 @@ export class CurrencyService {
     private currencyPriceRepository: Repository<CurrencyPrice>,
     private readonly httpService: HttpService,
   ) { 
-    this.updateCurrencies();
+    // this.updateCurrencies();
   }
 
   @Cron(CronExpression.EVERY_HOUR)
-  async updateCurrencies() {
+  private async updateCurrencies() {
     // Update currency table
     const { data: assetData } = await firstValueFrom(this.httpService.get(`https://testnet.web3.world/assets/manifest.json`));
     await Promise.all(assetData.tokens.map(async token => {
@@ -73,6 +73,10 @@ export class CurrencyService {
     }));
 
     return data?.currencies || [];
+  }
+
+  async getAllCurrencies() {
+    return await this.currencyRepository.find();
   }
 
 }

@@ -14,11 +14,6 @@ export class CurrencyController {
   //   return this.currencyService.getCurrencyPriceHistory(id, Number(query.from), Number(query.to), getIntervalForTimeRange(query.interval));
   // }
 
-  // @Get()
-  // startWorker() {
-  //   return this.currencyService.startWorkerThread();
-  // }
-
   // @Get('/eth-price')
   // getEthPrice() {
   //   return this.currencyService.getCurrentEthPrice();
@@ -28,4 +23,9 @@ export class CurrencyController {
   // getMonthlyEthPrices() {
   //   return this.currencyService.getSavedMonthlyEthPrices();
   // }
+
+  @Get('/currencies')
+  getAllCurrencies() {
+    return this.currencyService.getAllCurrencies();
+  }
 }
