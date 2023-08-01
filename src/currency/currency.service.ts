@@ -1,131 +1,78 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AssetDto } from 'src/graphql/dto/asset';
-import { GraphqlService } from 'src/graphql/graphql.service';
-import { START_YEAR, TimeRange } from 'src/utils/constants';
-import { getIntervalForTimeRange } from 'src/utils/helper';
-import { Worker } from 'worker_threads';
-import { AssetPriceHistory, EthPriceHistory, MonthlyEthPriceHistory, TimeData } from './worker/worker';
-import { CurrencyPriceCandleDto, CurrencyPriceDto } from 'src/graphql/dto/currency';
-import { FundDto } from 'src/fund/dto/fund.dto';
-import { AssetPriceCandleDto } from 'src/graphql/dto/assetPrice';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Currency } from './entity/currency.entity';
+import { Repository } from 'typeorm';
+import { CurrencyPrice } from './entity/currency_price.entity';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class CurrencyService {
   private readonly logger = new Logger(CurrencyService.name);
-  ethPriceHistories: EthPriceHistory;
-  monthlyEthPriceHistories: MonthlyEthPriceHistory;
-  timeData: TimeData;
-  assets: AssetDto[];
-  assetPriceHistories: AssetPriceHistory[];
-  currentEthPrice: string;
-  allFunds: (FundDto)[];
-  monthlyEthPriceCandles: CurrencyPriceCandleDto[];
-  monthlyAssetsPricesCandles: {asset: AssetDto, data: AssetPriceCandleDto[]}[];
-  
-  constructor(private readonly graphqlSerivce: GraphqlService) {}
 
-  startWorkerThread() {
-    this.runWorker();
+  constructor(
+    @InjectRepository(Currency)
+    private currencyRepository: Repository<Currency>,
+    @InjectRepository(CurrencyPrice)
+    private currencyPriceRepository: Repository<CurrencyPrice>,
+    private readonly httpService: HttpService,
+  ) { 
+    this.updateCurrencies();
   }
 
-  private runWorker() {
-    const worker = new Worker(`${__dirname}/worker/worker.js`, {
-      workerData: {},
-    });
-    worker.on('message', (result: {
-      type: 'Basic' | 'Monthly',
-      timeData?: TimeData,
-      currentEthPrice?: string,
-      ethPriceHistories?: EthPriceHistory,
-      assets?: AssetDto[],
-      assetPriceHistories?: AssetPriceHistory[],
-      monthlyEthPrices?: MonthlyEthPriceHistory,
-      allFunds?: (FundDto)[],
-      monthlyEthPriceCandles?: CurrencyPriceCandleDto[],
-      monthlyAssetsPricesCandles?: {asset: AssetDto, data: AssetPriceCandleDto[]}[],
-    }) => {
-      if (result.type === 'Basic') {
-        this.timeData = result.timeData;
-        this.currentEthPrice = result.currentEthPrice;
-        this.ethPriceHistories = result.ethPriceHistories;
-        this.assets = result.assets;
-        this.assetPriceHistories = result.assetPriceHistories;
-        this.monthlyEthPriceHistories = result.monthlyEthPrices;
-        this.allFunds = result.allFunds;
-      } else if (result.type === 'Monthly') {
-        this.monthlyEthPriceCandles = result.monthlyEthPriceCandles;
-        this.monthlyAssetsPricesCandles = result.monthlyAssetsPricesCandles;
-      }
-    });
-    worker.on('exit', (code) => {
-    });
-    worker.on('error', (e) => {
-      this.logger.warn(`Ohlc worker thread error, ${e.stack}`);
-    });
-  }
-
-  async getCurrencyPriceHistory(
-    id: string,
-    from: number,
-    to: number,
-    interval: number,
-  ) {
-    return this.graphqlSerivce.getCurrencyPriceHistory(id, from, to, interval);
-  }
-
-  async getAssetPriceHistory(
-    id: string,
-    from: number,
-    to: number,
-    interval: number
-  ) {
-    return this.graphqlSerivce.getAssetPriceHistory(id, from, to, interval);
-  }
-
-  async getAssets() {
-    return this.graphqlSerivce.getAssets();
-  }
-
-  async getCurrentEthPrice() {
-    const eth = await this.graphqlSerivce.getCurrency('ETH');
-    return eth.price.price;
-  }
-
-  getEthPriceAt(timestamp: string, timeRange: string) {
-    const history = this.ethPriceHistories[timeRange];
-    const prices = history[`price_history_${timestamp}`];
-    return prices[0].price;
-  }
-
-  async getMonthlyEthPrices() {
-    return this.graphqlSerivce.getMonthlyEthPrices();
-  }
-
-  async getSavedMonthlyEthPrices() {
-    const currentYear = new Date().getUTCFullYear();
-    const currentMonth = new Date().getUTCMonth();
-
-    const priceHistory = [];
-    for (let i = START_YEAR; i <= currentYear; i ++) {
-      for (let j = 0; j < 12; j ++) {
-        const timestamp = (new Date(`${i}-${j + 1}`).getTime() + 30 * 24 * 3600 * 1000) / 1000;
-        const prices = this.monthlyEthPriceHistories[`price_history_${timestamp}`];
-        const price = prices?.[0]?.price;
-        if (price) {
-          priceHistory.push({
-            year: i,
-            month: j,
-            timestamp: timestamp,
-            price: Number(price)
-          });
+  @Cron(CronExpression.EVERY_HOUR)
+  async updateCurrencies() {
+    // Update currency table
+    const { data: assetData } = await firstValueFrom(this.httpService.get(`https://testnet.web3.world/assets/manifest.json`));
+    await Promise.all(assetData.tokens.map(async token => {
+      const asset = await this.currencyRepository.findOne({
+        where: {
+          address: token.address
         }
+      });
 
-        if (i === currentYear && j === currentMonth) {
-          break;
-        }
+      if (asset) {
+        await this.currencyRepository.update({address: asset.address}, token);
+      } else {
+        await this.currencyRepository.save(token);
       }
+    }));
+
+    // Update currency prices table
+    let take = 10, offset = 0;
+    let result = await this.fetchPrices(take, offset);
+    const time = new Date();
+    time.setMinutes(0);
+    time.setSeconds(0);
+    time.setMilliseconds(0);
+    const timestamp = time.getTime();
+
+    while(result && result.length > 0) {
+      const currencies = await Promise.all(result?.map(async currencyData => {
+        const currency = await this.currencyRepository.findOneBy({address: currencyData.address})
+        console.log("currency: ", currency)
+        return {
+          currency: currency,
+          price: currencyData.price,
+          timestamp
+        }
+      }));
+      await this.currencyPriceRepository.save(currencies);
+
+      offset += result.length;
+      result = await this.fetchPrices(take, offset);
     }
-
-    return priceHistory;
   }
+
+  private async fetchPrices(take: number, offset: number) {
+    const { data } = await firstValueFrom(this.httpService.post(`https://testnetapi.web3.world/v1/currencies`, {
+      limit: take,
+      offset,
+      whiteListUri: "https://testnet.web3.world/assets/manifest.json"
+    }));
+
+    return data?.currencies || [];
+  }
+
 }

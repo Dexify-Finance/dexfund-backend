@@ -4,7 +4,6 @@ import {
   InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { CurrencyService } from 'src/currency/currency.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Fund, FundCategoryType } from './entity/fund.entity';
 import { ILike, Repository } from 'typeorm';
@@ -18,7 +17,6 @@ export class FundService {
   private readonly logger = new Logger(FundService.name);
 
   constructor(
-    private readonly currencyService: CurrencyService,
     private readonly walletService: WalletService,
     private readonly bucketService: BucketService,
     @InjectRepository(Fund)
@@ -130,15 +128,11 @@ export class FundService {
   }
 
   async getFundsByCategory(category: FundCategoryType, limit: number) {
-    const funds = this.currencyService.allFunds.filter(
-      (fund) => fund.category === category,
-    );
-    funds.sort((a, b) => b.aum - a.aum);
-
-    if (limit) {
-      return funds.slice(0, limit);
-    } else {
-      return funds;
-    }
+    return await this.fundRepository.find({
+      where: {
+        category,
+      },
+      take: limit
+    })
   }
 }
