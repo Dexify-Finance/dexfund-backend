@@ -2,6 +2,7 @@ import { Controller, Get, Param, Query } from '@nestjs/common';
 import { getIntervalForTimeRange } from 'src/utils/helper';
 import { CurrencyService } from './currency.service';
 import { CurrencyHistoryDto } from './dto/currencyHistory.dto';
+import { CurrencyPriceDto } from './dto/currency-price.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Currency')
@@ -27,5 +28,15 @@ export class CurrencyController {
   @Get('/currencies')
   getAllCurrencies() {
     return this.currencyService.getAllCurrencies();
+  }
+
+  @Get(':address/history')
+  async getPriceHistory(@Param('address') address: string, @Query() query: CurrencyHistoryDto) {
+    return this.currencyService.getCurrencyPriceHistory(address, query.from, query.to, query.interval);
+  }
+
+  @Get(':address/price')
+  getCurrencyPrice(@Param('address') address: string, @Query() query: CurrencyPriceDto) {
+    return this.currencyService.getPrice(address, query.timestamp);
   }
 }

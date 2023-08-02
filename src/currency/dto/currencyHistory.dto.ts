@@ -1,5 +1,5 @@
 export class CurrencyHistoryDto {
-    from: number;
-    to: number;
+    from: string;
+    to: string;
     interval: string;
 }

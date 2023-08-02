@@ -39,3 +39,13 @@ export const getTimeForTimeRange = (timerange: string): number => {
             return _1M;
     }
 }
+
+
+export const normalizeTime = (timestamp: any): number => {
+    const date = new Date(Number(timestamp));
+    date.setMinutes(0);
+    date.setSeconds(0);
+    date.setMilliseconds(0);
+
+    return date.getTime();
+}

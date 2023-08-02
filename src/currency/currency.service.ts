@@ -6,6 +6,7 @@ import { CurrencyPrice } from './entity/currency_price.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { normalizeTime } from 'src/utils/helper';
 
 @Injectable()
 export class CurrencyService {
@@ -77,6 +78,47 @@ export class CurrencyService {
 
   async getAllCurrencies() {
     return await this.currencyRepository.find();
+  }
+
+  async getCurrencyPriceHistory(address: string, from: string, to: string, interval: string) {
+    const fromTimestamp = normalizeTime(from);
+    const toTimestamp = normalizeTime(to);
+    const intervalTimestamp = Number(interval);
+
+    const timeArray = [];
+    for (let i = fromTimestamp; i <= toTimestamp; i += intervalTimestamp) {
+      timeArray.push(i.toString());
+    }
+
+    const records = await this.currencyPriceRepository.createQueryBuilder('currency_price')
+    .where("currency_price.currencyAddress = :address", {address})
+    .andWhere("currency_price.timestamp IN (:...timestamps)", { timestamps: timeArray })
+    .getMany();
+
+    const history = records?.map(record => ({
+      timestamp: record.timestamp,
+      price: record.price
+    })) || [];
+
+    return {
+      history,
+      timeArray
+    }
+  }
+
+  async getPrice(address: string, timestamp: string) {
+    const record = await this.currencyPriceRepository.createQueryBuilder('currency_price')
+    .where("currency_price.currencyAddress = :address", {address})
+    .andWhere("currency_price.timestamp < :timestamp", {timestamp: timestamp})
+    .orderBy("currency_price.timestamp", "DESC")
+    .limit(1)
+    .getOne();
+
+    if (record) {
+      return record.price;
+    } else {
+      return null;
+    }
   }
 
 }
