@@ -6,10 +6,12 @@ import { CurrencyModule } from 'src/currency/currency.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Fund } from './entity/fund.entity';
 import { SharedModule } from 'src/shared/shared.module';
+import { PortfolioAsset } from './entity/portfolio.entity';
+import { FundInvestor } from './entity/investor.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Fund]),
+    TypeOrmModule.forFeature([Fund, PortfolioAsset, FundInvestor]),
     SharedModule,
     GraphqlModule,
     CurrencyModule,

@@ -1,5 +1,6 @@
 import { ADDRESS_LENGTH } from "src/utils/constants";
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, OneToMany, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
+import { PortfolioAsset } from "./portfolio.entity";
 
 export enum FundCategoryType {
     INDEX = 0,
@@ -9,14 +10,7 @@ export enum FundCategoryType {
 
 @Entity()
 export class Fund {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
-
-    @Column({
-        unique: true,
-        nullable: false,
-        length: ADDRESS_LENGTH,
-    })
+    @PrimaryColumn()
     address: string;
 
     @Column({
@@ -34,6 +28,12 @@ export class Fund {
         length: ADDRESS_LENGTH,
     })
     comptroller: string;
+
+    @Column({
+        nullable: false,
+        length: ADDRESS_LENGTH
+    })
+    token_root: string;
 
     @Column({
         nullable: false,

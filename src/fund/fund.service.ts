@@ -11,6 +11,9 @@ import { UpdateFundDto } from './dto/update-fund.dto';
 import { WalletService } from 'src/shared/services/wallet.service';
 import { BucketService } from 'src/shared/services/bucket.service';
 import { ADMINS } from '../utils/constants';
+import { PortfolioAsset } from './entity/portfolio.entity';
+import { FundInvestor } from './entity/investor.entity';
+import { Address } from 'everscale-inpage-provider';
 
 @Injectable()
 export class FundService {
@@ -21,6 +24,10 @@ export class FundService {
     private readonly bucketService: BucketService,
     @InjectRepository(Fund)
     private fundRepository: Repository<Fund>,
+    @InjectRepository(PortfolioAsset)
+    private portfolioAssetRepository: Repository<PortfolioAsset>,
+    @InjectRepository(FundInvestor)
+    private investorRepository: Repository<FundInvestor>
   ) {}
 
   async getFund(address: string) {
@@ -134,5 +141,72 @@ export class FundService {
       },
       take: limit
     })
+  }
+
+ async updateFundPortfolio(fundAddress: string, currency: string, amount: string) {
+    let record = await this.portfolioAssetRepository.findOne({
+      where: {
+        fund: fundAddress,
+        currency: currency
+      }
+    });
+
+    if (record) {
+      record.amount = amount;
+      record.timestamp = Date.now().toString();
+    } else {
+      record = new PortfolioAsset();
+      record.fund = fundAddress;
+      record.currency = currency;
+      record.amount = amount;
+      record.timestamp = Date.now().toString();
+    }
+
+    await this.portfolioAssetRepository.save([record]);
+  }
+
+  getFundRepository() {
+    return this.fundRepository;
+  }
+
+  async updateFundInvestor(fundAddress: Address, investorAddress: Address, shareAmount: string, isDeposit: boolean) {
+    let record = await this.investorRepository.findOne({
+      where: {
+        fund: fundAddress.toString(),
+        investor: investorAddress.toString()
+      }
+    });
+
+    if (isDeposit) {
+      if (record) {
+        record.amount = String(Number(record.amount) + Number(shareAmount));
+        record.timestamp = Date.now().toString();
+      } else {
+        record = new FundInvestor();
+        record.fund = fundAddress.toString();
+        record.investor = investorAddress.toString();
+        record.amount = shareAmount;
+        record.timestamp = Date.now().toString();
+      }
+  
+    } else {
+      if (record) {
+        record.amount = String(Number(record.amount) - Number(shareAmount));
+        record.timestamp = Date.now().toString();
+      }
+    }
+    
+    await this.investorRepository.save([record]);
+  }
+
+  async updateFundData(fundAddress: Address, key: string, value: string) {
+    let record = await this.fundRepository.findOne({
+      where: {
+        address: fundAddress.toString(),
+      }
+    })
+
+    record[key] = value;
+    await this.fundRepository.save([record]);
   }
 }

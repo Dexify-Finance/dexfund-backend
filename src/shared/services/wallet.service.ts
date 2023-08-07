@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ethers } from 'ethers';
+import { Address, isAddressObject } from 'everscale-inpage-provider';
 
 @Injectable()
 export class WalletService {
@@ -36,7 +37,7 @@ export class WalletService {
   }
 
   verifyAddress(address: string) {
-    if (ethers.utils.isAddress(address)) return;
+    if (isAddressObject(new Address(address))) return;
 
     this.logger.error('The address type is invalid.');
     throw new BadRequestException('Invalid Address');

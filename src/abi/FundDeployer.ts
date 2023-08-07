@@ -12,7 +12,9 @@ export default {
 				{"name":"tokenFactory","type":"address"},
 				{"name":"priceInterpreterCode","type":"cell"},
 				{"name":"dexRoot","type":"address"},
-				{"name":"tip3UsdtRoot","type":"address"}
+				{"name":"tip3UsdtRoot","type":"address"},
+				{"name":"tip3LpUsdtWvenomRoot","type":"address"},
+				{"name":"tip3WvenomRoot","type":"address"}
 			],
 			"outputs": [
 			]
@@ -70,6 +72,7 @@ export default {
 			"name": "requestUpgradeComptroller",
 			"inputs": [
 				{"name":"currentVersion","type":"uint32"},
+				{"name":"nonce","type":"uint32"},
 				{"name":"owner","type":"address"},
 				{"name":"remainingGasTo","type":"address"},
 				{"name":"upgrade_params","type":"cell"}
@@ -81,7 +84,8 @@ export default {
 			"name": "comptrollerOf",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"owner","type":"address"}
+				{"name":"owner","type":"address"},
+				{"name":"nonce","type":"uint32"}
 			],
 			"outputs": [
 				{"name":"value0","type":"address"}
@@ -223,6 +227,38 @@ export default {
 			"outputs": [
 				{"name":"value0","type":"cell"}
 			]
+		},
+		{
+			"name": "vaultVersion_",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"vaultVersion_","type":"uint32"}
+			]
+		},
+		{
+			"name": "comptrollerVersion_",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"comptrollerVersion_","type":"uint32"}
+			]
+		},
+		{
+			"name": "dexVault_",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"dexVault_","type":"address"}
+			]
+		},
+		{
+			"name": "vaultNumber",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"vaultNumber","type":"uint32"}
+			]
 		}
 	],
 	"data": [
@@ -315,6 +351,7 @@ export default {
 		{"name":"priceInterpreterCode_","type":"cell"},
 		{"name":"priceInterpreterVersion_","type":"uint32"},
 		{"name":"dexRoot_","type":"address"},
+		{"name":"dexVault_","type":"address"},
 		{"name":"tip3UsdtRoot_","type":"address"},
 		{"name":"vaultNumber","type":"uint32"}
 	]
