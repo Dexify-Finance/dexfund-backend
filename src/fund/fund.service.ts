@@ -14,6 +14,7 @@ import { ADMINS } from '../utils/constants';
 import { PortfolioAsset } from './entity/portfolio.entity';
 import { FundInvestor } from './entity/investor.entity';
 import { Address } from 'everscale-inpage-provider';
+import { CurrencyService } from 'src/currency/currency.service';
 
 @Injectable()
 export class FundService {
@@ -22,6 +23,7 @@ export class FundService {
   constructor(
     private readonly walletService: WalletService,
     private readonly bucketService: BucketService,
+    private readonly currencyService: CurrencyService,
     @InjectRepository(Fund)
     private fundRepository: Repository<Fund>,
     @InjectRepository(PortfolioAsset)
@@ -32,8 +34,13 @@ export class FundService {
 
   async getFund(address: string) {
     const fund = await this.findOneFundByAddress(address);
-
-    return fund;
+    const portfolio = await this.getFundPortfolio(address);
+    const investors = await this.getFundInvestors(address);
+    return {
+      ...fund,
+      portfolio,
+      investors
+    };
   }
 
 
@@ -45,9 +52,19 @@ export class FundService {
     return funds;
   }
 
-  async getAllFunds(): Promise<Fund[]> {
+  async getAllFunds(): Promise<(Fund | FundInvestor | (PortfolioAsset | {price: string}))[]> {
     const funds = await this.fundRepository.find();
-    return funds;
+    const res = await Promise.all(funds.map(async fund => {
+      const portfolio = await this.getFundPortfolio(fund.address);
+      const investors = await this.getFundInvestors(fund.address);
+      return {
+        ...fund,
+        portfolio,
+        investors
+      }
+    }))
+
+    return res;
   }
 
 
@@ -208,5 +225,34 @@ export class FundService {
 
     record[key] = value;
     await this.fundRepository.save([record]);
+  }
+
+  async getFundPortfolio(fundAddress: string) {
+    const portfolioAssets = await this.portfolioAssetRepository.find({
+      where: {
+        fund: fundAddress,
+      }
+    });
+
+    const res = await Promise.all(portfolioAssets.map(async asset => {
+      const price = await this.currencyService.getPrice(asset.currency, Date.now().toString());
+      return {
+        ...asset,
+        price
+      }
+    }));
+
+    return res;
+  }
+
+  async getFundInvestors(fundAddress: string) {
+    
+    const investorData = await this.investorRepository.find({
+      where: {
+        fund: fundAddress
+      }
+    });
+
+    return investorData;
   }
 }
