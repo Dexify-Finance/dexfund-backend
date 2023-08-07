@@ -8,10 +8,11 @@ import { Fund } from './entity/fund.entity';
 import { SharedModule } from 'src/shared/shared.module';
 import { PortfolioAsset } from './entity/portfolio.entity';
 import { FundInvestor } from './entity/investor.entity';
+import { FundAction } from './entity/fund-action.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Fund, PortfolioAsset, FundInvestor]),
+    TypeOrmModule.forFeature([Fund, PortfolioAsset, FundInvestor, FundAction]),
     SharedModule,
     GraphqlModule,
     CurrencyModule,

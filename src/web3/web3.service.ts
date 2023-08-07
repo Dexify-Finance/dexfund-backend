@@ -119,18 +119,22 @@ export class Web3Service {
     })
   }
 
-  private handleShareBoughtEvent(vaultAddress: Address, data: any) {
+  private async handleShareBoughtEvent(vaultAddress: Address, data: any) {
     // event LPTokensMinted(uint128 lpAmount, address sender, address tokenRoot, uint128 depositAmount);
-    this.updateFundPortfolio(vaultAddress);
+    await this.updateFundPortfolio(vaultAddress);
     
     const investorAddress: Address = data.sender;
     const lpAmount = data.lpAmount;
-    this.fundService.updateFundInvestor(vaultAddress, investorAddress, lpAmount, true);
+    const tokenRoot = data.tokenRoot;
+    const depositAmount = data.depositAmount;
+
+    await this.fundService.updateFundInvestor(vaultAddress, investorAddress, lpAmount, true);
+    await this.fundService.updateFundAction(vaultAddress, investorAddress, tokenRoot, depositAmount, 'BUY SHARES');
   }
 
-  private handleShareRedeemedEvent(vaultAddress: Address, data: any) {
+  private async handleShareRedeemedEvent(vaultAddress: Address, data: any) {
     // event LPTokensRedeemed(uint128 lpAmount, uint128 tokenAmount, uint128 share, uint128 totalSupply);
-    this.updateFundPortfolio(vaultAddress);
+    await this.updateFundPortfolio(vaultAddress);
   }
 
   private async handleLPTokenRootDeployed(vaultAddress: Address, data: any) {

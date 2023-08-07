@@ -23,8 +23,8 @@ export class FundController {
   }
 
   @Get('/funds/:category')
-  getFundsByCategory(@Param('category') category: FundCategoryType, @Query('limit') limit: number) {
-    return this.fundService.getFundsByCategory(category, limit);
+  getFundsByCategory(@Param('category') category: FundCategoryType, @Query('limit') limit: number, @Query('skip') skip: number) {
+    return this.fundService.getFundsByCategory(category, limit, skip);
   }
 
   @Get(':id')
@@ -40,6 +40,16 @@ export class FundController {
     @UploadedFile(ImageValidationPipe) file?: Express.Multer.File,
   ): Promise<Fund> {
     return this.fundService.updateFund(updateUserDto, file);
+  }
+
+  @Get('fund-action/:address')
+  getFundActions(@Param('address') fundAddress: string, @Query('take') take: number, @Query('skip') skip: number) {
+    return this.fundService.getFundAction(fundAddress, take, skip);
+  }
+
+  @Get('fund-action-buy-user/:address')
+  getFundActionsByUser(@Param('address') fundAddress: string, @Query('user') user: string,  @Query('take') take: number, @Query('skip') skip: number) {
+    return this.fundService.getFundActionByUser(fundAddress, user, take, skip);
   }
 
 }

@@ -15,6 +15,7 @@ import { PortfolioAsset } from './entity/portfolio.entity';
 import { FundInvestor } from './entity/investor.entity';
 import { Address } from 'everscale-inpage-provider';
 import { CurrencyService } from 'src/currency/currency.service';
+import { FundAction } from './entity/fund-action.entity';
 
 @Injectable()
 export class FundService {
@@ -29,7 +30,9 @@ export class FundService {
     @InjectRepository(PortfolioAsset)
     private portfolioAssetRepository: Repository<PortfolioAsset>,
     @InjectRepository(FundInvestor)
-    private investorRepository: Repository<FundInvestor>
+    private investorRepository: Repository<FundInvestor>,
+    @InjectRepository(FundAction)
+    private fundActionRepository: Repository<FundAction>
   ) {}
 
   async getFund(address: string) {
@@ -151,16 +154,18 @@ export class FundService {
     }
   }
 
-  async getFundsByCategory(category: FundCategoryType, limit: number) {
+  async getFundsByCategory(category: FundCategoryType, limit: number, skip: number) {
     return await this.fundRepository.find({
       where: {
         category,
       },
-      take: limit
+      take: limit,
+      skip
     })
   }
 
  async updateFundPortfolio(fundAddress: string, currency: string, amount: string) {
+  try {
     let record = await this.portfolioAssetRepository.findOne({
       where: {
         fund: fundAddress,
@@ -180,6 +185,10 @@ export class FundService {
     }
 
     await this.portfolioAssetRepository.save([record]);
+  } catch (err) {
+    this.logger.error(`Failed to update fund portfolio`);
+  }
+    
   }
 
   getFundRepository() {
@@ -187,33 +196,38 @@ export class FundService {
   }
 
   async updateFundInvestor(fundAddress: Address, investorAddress: Address, shareAmount: string, isDeposit: boolean) {
-    let record = await this.investorRepository.findOne({
-      where: {
-        fund: fundAddress.toString(),
-        investor: investorAddress.toString()
-      }
-    });
-
-    if (isDeposit) {
-      if (record) {
-        record.amount = String(Number(record.amount) + Number(shareAmount));
-        record.timestamp = Date.now().toString();
-      } else {
-        record = new FundInvestor();
-        record.fund = fundAddress.toString();
-        record.investor = investorAddress.toString();
-        record.amount = shareAmount;
-        record.timestamp = Date.now().toString();
-      }
+    try {
+      let record = await this.investorRepository.findOne({
+        where: {
+          fund: fundAddress.toString(),
+          investor: investorAddress.toString()
+        }
+      });
   
-    } else {
-      if (record) {
-        record.amount = String(Number(record.amount) - Number(shareAmount));
-        record.timestamp = Date.now().toString();
+      if (isDeposit) {
+        if (record) {
+          record.amount = String(Number(record.amount) + Number(shareAmount));
+          record.timestamp = Date.now().toString();
+        } else {
+          record = new FundInvestor();
+          record.fund = fundAddress.toString();
+          record.investor = investorAddress.toString();
+          record.amount = shareAmount;
+          record.timestamp = Date.now().toString();
+        }
+    
+      } else {
+        if (record) {
+          record.amount = String(Number(record.amount) - Number(shareAmount));
+          record.timestamp = Date.now().toString();
+        }
       }
+      
+      await this.investorRepository.save([record]);
+    } catch (err) {
+      this.logger.error(`Failed to update fund investor`);
     }
     
-    await this.investorRepository.save([record]);
   }
 
   async updateFundData(fundAddress: Address, key: string, value: string) {
@@ -225,6 +239,22 @@ export class FundService {
 
     record[key] = value;
     await this.fundRepository.save([record]);
+  }
+
+  async updateFundAction(fundAddress: Address, investor: Address, tokenRoot: Address, tokenAmount: string, action: string) {
+    try {
+      const fundAction = new FundAction();
+      fundAction.fund = fundAddress.toString();
+      fundAction.investor = investor.toString();
+      fundAction.currency = tokenRoot.toString();
+      fundAction.action_type = action;
+      fundAction.amount = tokenAmount;
+      fundAction.timestamp = Date.now().toString();
+
+      await this.fundActionRepository.save([fundAction]);
+    } catch (err) {
+      this.logger.error(`Failed to save fund action`)
+    }
   }
 
   async getFundPortfolio(fundAddress: string) {
@@ -254,5 +284,30 @@ export class FundService {
     });
 
     return investorData;
+  }
+
+  async getFundAction(fundAddress: string, take: number, skip: number) {
+    const actions = await this.fundActionRepository.find({
+      where: {
+        fund: fundAddress
+      },
+      take,
+      skip
+    });
+
+    return actions;
+  }
+
+  async getFundActionByUser(fundAddress: string, userAddress: string, take: number, skip: number) {
+    const actions = await this.fundActionRepository.find({
+      where: {
+        fund: fundAddress,
+        investor: userAddress
+      },
+      take,
+      skip
+    });
+
+    return actions;
   }
 }
