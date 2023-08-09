@@ -23,7 +23,7 @@ export class UpdateFundDto {
 
   @ApiProperty({ required: false })
   @Expose()
-  category: FundCategoryType;
+  category: number;
 
   @ApiProperty({ required: false })
   @Expose()

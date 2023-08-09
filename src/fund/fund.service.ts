@@ -112,7 +112,7 @@ export class FundService {
       if (updateFundDto.description) {
         data.description = updateFundDto.description;
       }
-      if (updateFundDto.file) {
+      if (imageUrl) {
         data.image = imageUrl;
       }
 
