@@ -81,20 +81,20 @@ export class FundService {
     // );
     const fund = await this.findOneFundByAddress(updateFundDto.address);
 
-    if (
-      fund.owner.toLowerCase() !== updateFundDto.userAddress.toLowerCase() &&
-      !ADMINS.find(
-        (item) =>
-          item.toLowerCase() === updateFundDto.userAddress.toLowerCase(),
-      )
-    ) {
-      this.logger.error('You are not owner of this fund');
+    // if (
+    //   fund.owner.toLowerCase() !== updateFundDto.userAddress.toLowerCase() &&
+    //   !ADMINS.find(
+    //     (item) =>
+    //       item.toLowerCase() === updateFundDto.userAddress.toLowerCase(),
+    //   )
+    // ) {
+    //   this.logger.error('You are not owner of this fund');
 
-      throw new UnauthorizedException({
-        message: 'Not owner of fund',
-        code: 'Invalid user',
-      });
-    }
+    //   throw new UnauthorizedException({
+    //     message: 'Not owner of fund',
+    //     code: 'Invalid user',
+    //   });
+    // }
 
     let imageUrl: string;
     if (file) {
@@ -132,7 +132,7 @@ export class FundService {
   }
 
   private async findOneFundByAddress(address: string) {
-    this.walletService.verifyAddress(address);
+    // this.walletService.verifyAddress(address);
     return await this.fundRepository.findOneBy({ address: ILike(address) });
   }
 
