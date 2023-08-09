@@ -75,10 +75,10 @@ export class FundService {
     updateFundDto: UpdateFundDto,
     file: Express.Multer.File,
   ) {
-    this.walletService.verifySigner(
-      updateFundDto.userAddress,
-      updateFundDto.signature,
-    );
+    // this.walletService.verifySigner(
+    //   updateFundDto.userAddress,
+    //   updateFundDto.signature,
+    // );
     const fund = await this.findOneFundByAddress(updateFundDto.address);
 
     if (
