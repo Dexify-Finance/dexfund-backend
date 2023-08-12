@@ -32,6 +32,12 @@ export class FundAction {
     amount: string;
 
     @Column({
+        nullable: true,
+        default: '0:'
+    })
+    hash: string;
+
+    @Column({
         nullable: false
     })
     timestamp: string;

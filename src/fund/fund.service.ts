@@ -245,7 +245,7 @@ export class FundService {
     await this.fundRepository.save([record]);
   }
 
-  async updateFundAction(fundAddress: Address, investor: Address, tokenRoot: Address, tokenAmount: string, action: string) {
+  async addFundAction(fundAddress: Address, investor: Address, tokenRoot: Address, tokenAmount: string, action: string, hash: string, createdAt: number) {
     try {
       const fundAction = new FundAction();
       fundAction.fund = fundAddress.toString();
@@ -253,7 +253,8 @@ export class FundService {
       fundAction.currency = tokenRoot.toString();
       fundAction.action_type = action;
       fundAction.amount = tokenAmount;
-      fundAction.timestamp = Date.now().toString();
+      fundAction.timestamp = createdAt.toString();
+      fundAction.hash = hash;
 
       await this.fundActionRepository.save([fundAction]);
     } catch (err) {

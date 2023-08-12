@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Address, ProviderRpcClient } from 'everscale-inpage-provider';
+import { Address, ProviderRpcClient, Transaction } from 'everscale-inpage-provider';
 import { EverscaleStandaloneClient } from 'everscale-standalone-client/nodejs';
 import { async } from 'rxjs';
 import FundDeployerABI from 'src/abi/FundDeployer';
@@ -107,10 +107,10 @@ export class Web3Service {
       console.log('contractEvent-vault', event);
       switch (event.event) {
         case 'LPTokensMinted':
-          this.handleShareBoughtEvent(vaultAddress, event.data);
+          this.handleShareBoughtEvent(vaultAddress, event.data, event.transaction);
           break;
         case 'LPTokensRedeemed':
-          this.handleShareRedeemedEvent(vaultAddress, event.data);
+          this.handleShareRedeemedEvent(vaultAddress, event.data, event.transaction);
           break;
         case 'LPTokenRootDeployed':
           this.handleLPTokenRootDeployed(vaultAddress, event.data);
@@ -119,7 +119,7 @@ export class Web3Service {
     })
   }
 
-  private async handleShareBoughtEvent(vaultAddress: Address, data: any) {
+  private async handleShareBoughtEvent(vaultAddress: Address, data: any, transaction: Transaction) {
     // event LPTokensMinted(uint128 lpAmount, address sender, address tokenRoot, uint128 depositAmount);
     await this.updateFundPortfolio(vaultAddress);
     
@@ -127,14 +127,26 @@ export class Web3Service {
     const lpAmount = data.lpAmount;
     const tokenRoot = data.tokenRoot;
     const depositAmount = data.depositAmount;
+    const hash = transaction.id.hash;
+    const createdAt = transaction.createdAt;
 
     await this.fundService.updateFundInvestor(vaultAddress, investorAddress, lpAmount, true);
-    await this.fundService.updateFundAction(vaultAddress, investorAddress, tokenRoot, depositAmount, 'BUY SHARES');
+    await this.fundService.addFundAction(vaultAddress, investorAddress, tokenRoot, depositAmount, 'BUY SHARES', hash, createdAt);
   }
 
-  private async handleShareRedeemedEvent(vaultAddress: Address, data: any) {
+  private async handleShareRedeemedEvent(vaultAddress: Address, data: any, transaction: Transaction) {
     // event LPTokensRedeemed(uint128 lpAmount, uint128 tokenAmount, uint128 share, uint128 totalSupply);
     await this.updateFundPortfolio(vaultAddress);
+
+    const investorAddress: Address = data.sender;
+    const lpAmount = data.lpAmount;
+    const tokenRoot = null;
+    const depositAmount = data.lpAmount;
+    const hash = transaction.id.hash;
+    const createdAt = transaction.createdAt;
+
+    await this.fundService.updateFundInvestor(vaultAddress, investorAddress, lpAmount, false);
+    await this.fundService.addFundAction(vaultAddress, investorAddress, tokenRoot, depositAmount, 'REDEEM SHARES', hash, createdAt);
   }
 
   private async handleLPTokenRootDeployed(vaultAddress: Address, data: any) {
