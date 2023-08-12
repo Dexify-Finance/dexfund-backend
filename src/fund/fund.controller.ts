@@ -52,4 +52,9 @@ export class FundController {
     return this.fundService.getFundActionByUser(fundAddress, user, take, skip);
   }
 
+  @Post('/clear')
+  clear() {
+    return this.fundService.clear();
+  }
+
 }

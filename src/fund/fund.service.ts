@@ -3,6 +3,7 @@ import {
   Logger,
   InternalServerErrorException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Fund, FundCategoryType } from './entity/fund.entity';
@@ -80,6 +81,9 @@ export class FundService {
     //   updateFundDto.signature,
     // );
     const fund = await this.findOneFundByAddress(updateFundDto.address);
+    if (!fund) {
+      throw new BadRequestException(`Fund does not exists - ${updateFundDto.address}`);
+    }
 
     // if (
     //   fund.owner.toLowerCase() !== updateFundDto.userAddress.toLowerCase() &&
@@ -309,5 +313,14 @@ export class FundService {
     });
 
     return actions;
+  }
+
+  async clear() {
+    await this.fundRepository.clear();
+    await this.investorRepository.clear();
+    await this.fundActionRepository.clear();
+    await this.portfolioAssetRepository.clear();
+
+    return true;
   }
 }
