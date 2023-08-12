@@ -80,7 +80,7 @@ export class Web3Service {
     console.log('token root data: ', tokenRootData, tokenRootData.lp_token_root);
     const fund = await this.fundService.createNewFund({
       address: vaultAddress.toString(),
-      category: FundCategoryType.ICON,
+      category: FundCategoryType.INDEX,
       owner: ownerAddress.toString(),
       comptroller: comptroller.toString(),
       token_root: tokenRootData.lp_token_root.toString(),
