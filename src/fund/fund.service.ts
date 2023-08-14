@@ -39,7 +39,7 @@ export class FundService {
   async getFund(address: string) {
     const fund = await this.findOneFundByAddress(address);
     const portfolio = await this.getFundPortfolio(address);
-    const investors = await this.getFundInvestors(address);
+    const investors = await this.getFundInvestors(address, 100, 0);
     return {
       ...fund,
       portfolio,
@@ -60,7 +60,7 @@ export class FundService {
     const funds = await this.fundRepository.find();
     const res = await Promise.all(funds.map(async fund => {
       const portfolio = await this.getFundPortfolio(fund.address);
-      const investors = await this.getFundInvestors(fund.address);
+      const investors = await this.getFundInvestors(fund.address, 100, 0);
       return {
         ...fund,
         portfolio,
@@ -283,13 +283,14 @@ export class FundService {
     return res;
   }
 
-  async getFundInvestors(fundAddress: string) {
+  async getFundInvestors(fundAddress: string, take: number, skip: number) {
 
     const investorData = await this.investorRepository.find({
       where: {
         fund: fundAddress
       },
-      take: 1000
+      take,
+      skip
     });
 
     const count = await this.investorRepository.createQueryBuilder('fund_investor').where('fund_investor.fund = :fund_address', { fund_address: fundAddress }).getCount();

@@ -57,4 +57,9 @@ export class FundController {
     return this.fundService.clear();
   }
 
+  @Get('fund-investors/:address')
+  getFundInvestors(@Param('address') fundAddress: string, @Query('take') take: number, @Query('skip') skip: number) {
+    return this.fundService.getFundInvestors(fundAddress, take, skip);
+  }
+
 }
