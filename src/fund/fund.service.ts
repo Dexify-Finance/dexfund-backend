@@ -250,7 +250,9 @@ export class FundService {
       const fundAction = new FundAction();
       fundAction.fund = fundAddress.toString();
       fundAction.investor = investor.toString();
-      fundAction.currency = tokenRoot.toString();
+      if (tokenRoot) {
+        fundAction.currency = tokenRoot.toString();
+      }
       fundAction.action_type = action;
       fundAction.amount = tokenAmount;
       fundAction.timestamp = createdAt.toString();
@@ -258,7 +260,8 @@ export class FundService {
 
       await this.fundActionRepository.save([fundAction]);
     } catch (err) {
-      this.logger.error(`Failed to save fund action`)
+      console.log('error in redeem: ', err);
+      this.logger.error(`Failed to save fund action: ${err}`)
     }
   }
 

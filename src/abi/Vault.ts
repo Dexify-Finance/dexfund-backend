@@ -310,6 +310,7 @@ export default {
 			"name": "LPTokensRedeemed",
 			"inputs": [
 				{"name":"lpAmount","type":"uint128"},
+				{"name":"sender","type":"address"},
 				{"name":"tokenAmount","type":"uint128"},
 				{"name":"share","type":"uint128"},
 				{"name":"totalSupply","type":"uint128"}
