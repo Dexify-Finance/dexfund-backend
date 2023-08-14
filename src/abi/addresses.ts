@@ -1,2 +1,2 @@
 export const TOKEN_FACTORY_ADDRESS = "0:7796831bd8ee68c8daccb72e19e907389677aa6f888c083f0ac89076e58860e2";
-export const FundDeployerAddress = "0:fe9e3e062af25445324c3d1516649219d88f4c0c3efc7af142b971b9d70aed32";
+export const FundDeployerAddress = "0:026ac2e10d8c9a4d7971082b1ca5d2e534fda8ad5d51d6b5832bf94f0be3a783";
