@@ -41,6 +41,7 @@ export class Web3Service {
 
     this.subscribeFundDeployerEvents();
     this.setupSubscribeForVaults();
+    this.updateFundHolding();
     // this.subscribeVaultEvents(new Address('0:9bce491e5c64023b3ccec7c57cdba975b6abbcb67fccf0e6adf731c9592df89e'));
     // this.updateFundPortfolio(new Address("0:9bce491e5c64023b3ccec7c57cdba975b6abbcb67fccf0e6adf731c9592df89e"))
   }
