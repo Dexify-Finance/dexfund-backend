@@ -280,7 +280,7 @@ export class FundService {
       }
     }));
 
-    return res;
+    return res.filter(item => Number(item.amount) > 0);
   }
 
   async getFundInvestors(fundAddress: string, take: number, skip: number) {

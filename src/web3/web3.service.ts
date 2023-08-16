@@ -4,8 +4,10 @@ import { Address, ProviderRpcClient, Transaction } from 'everscale-inpage-provid
 import { EverscaleStandaloneClient } from 'everscale-standalone-client/nodejs';
 import { async } from 'rxjs';
 import FundDeployerABI from 'src/abi/FundDeployer';
+import TokenWallet from 'src/abi/TokenWallet';
 import vaultABI from 'src/abi/Vault';
 import { FundDeployerAddress } from 'src/abi/addresses';
+import { CurrencyService } from 'src/currency/currency.service';
 import { FundDto } from 'src/fund/dto/fund.dto';
 import { FundCategoryType } from 'src/fund/entity/fund.entity';
 import { FundService } from 'src/fund/fund.service';
@@ -22,6 +24,7 @@ export class Web3Service {
 
   constructor(
     private readonly fundService: FundService,
+    private readonly currencyService: CurrencyService
   ) {
     this.venomClient = new ProviderRpcClient({
       fallback: () =>
@@ -168,22 +171,45 @@ export class Web3Service {
       vaultAddress
     );
 
+    const tokenWallets = (await vaultContract.methods._RootAddressToWallet({} as never).call()) as any;
+    const wallets = tokenWallets._RootAddressToWallet || [];
+
     const tokenBalances = (await vaultContract.methods._RootAddressToBalance({} as never).call()) as any;
 
     const balances = tokenBalances?._RootAddressToBalance || [];
 
-    await Promise.all(balances.map(async data => {
-      const address = data[0];
-      const balance = data[1];
-      console.log('address-balance: ', address, balance);
-      if (address.toString().toLowerCase() != vault.token_root.toLowerCase()) {
+    await Promise.all(wallets.map(async wallet => {
+      const tokenWallet = new this.venomClient.Contract(
+        TokenWallet,
+        wallet[1]
+      );
+
+      let balance = (await tokenWallet.methods.balance({answerId: 0} as never).call()) as any;
+
+      balance = balance?.value0;
+      
+      if (wallet?.[0]?.toString()?.toLowerCase() != vault.token_root.toLowerCase()) {
         try {
-          await this.fundService.updateFundPortfolio(vaultAddress.toString(), address.toString(), balance);
+          await this.fundService.updateFundPortfolio(vaultAddress.toString(), wallet?.[0].toString(), balance);
         } catch (e) {
           this.logger.error(`Error in saving fund portfolio`);
         }
       }
+
     }));
+
+    // await Promise.all(balances.map(async data => {
+    //   const address = data[0];
+    //   const balance = data[1];
+    //   console.log('address-balance: ', address, balance);
+    //   if (address.toString().toLowerCase() != vault.token_root.toLowerCase()) {
+    //     try {
+    //       await this.fundService.updateFundPortfolio(vaultAddress.toString(), address.toString(), balance);
+    //     } catch (e) {
+    //       this.logger.error(`Error in saving fund portfolio`);
+    //     }
+    //   }
+    // }));
 
     // this.fundService.updateFundPortfolio(vaultAddress, currency, amount)
   }
