@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { Address, ProviderRpcClient, Transaction } from 'everscale-inpage-provider';
 import { EverscaleStandaloneClient } from 'everscale-standalone-client/nodejs';
 import { async } from 'rxjs';
@@ -190,6 +191,19 @@ export class Web3Service {
     const funds = await (this.fundService.getFundRepository()).find();
     funds.map(fund => {
       this.subscribeVaultEvents(new Address(fund.address));
+    })
+  }
+
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async updateFundHolding() {
+    const funds = await this.fundService.getTopFunds();
+    funds.map(fund => {
+      try {
+        this.updateFundPortfolio(new Address(fund.address))
+      } catch (err) {
+        console.log("Error in updating fund: ", err);
+        this.logger.error(`Error in updating fund: ${err}`)
+      }
     })
   }
 }
