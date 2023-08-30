@@ -21,6 +21,7 @@ import { FundAction } from './entity/fund-action.entity';
 @Injectable()
 export class FundService {
   private readonly logger = new Logger(FundService.name);
+  private INDEX_FUND = "0:1030e1deb5c4cf166da3ff6732ac14d577b5a9c2da7388c08f9162c6884a9332";
 
   constructor(
     private readonly walletService: WalletService,
@@ -50,14 +51,21 @@ export class FundService {
 
   async getTopFunds(): Promise<Fund[]> {
     const funds = await this.fundRepository.find({
-      take: 10
+      take: 10,
+      where: {
+        address: this.INDEX_FUND
+      }
     });
 
     return funds;
   }
 
   async getAllFunds(): Promise<(Fund | FundInvestor | (PortfolioAsset | { price: string }))[]> {
-    const funds = await this.fundRepository.find();
+    const funds = await this.fundRepository.find({
+      where: {
+        address: this.INDEX_FUND
+      }
+    });
     const res = await Promise.all(funds.map(async fund => {
       const portfolio = await this.getFundPortfolio(fund.address);
       const investors = await this.getFundInvestors(fund.address, 100, 0);
@@ -162,6 +170,7 @@ export class FundService {
     return await this.fundRepository.find({
       where: {
         category,
+        address: this.INDEX_FUND
       },
       take: limit,
       skip
