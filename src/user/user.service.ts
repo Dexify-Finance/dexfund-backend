@@ -86,9 +86,15 @@ export class UserService {
   }
 
   async getUsers(skip: number, take: number) {
-    return await this.userRepository.find({
+    const count = await this.userRepository.count();
+    const users = await this.userRepository.find({
       skip,
       take
     });
+
+    return {
+      count,
+      users
+    }
   }
 }
