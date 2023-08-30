@@ -14,9 +14,9 @@ export class UpdateUserDto {
   })
   address: string;
 
-  @ApiProperty()
+  @ApiProperty({required: false})
   @Expose()
-  @IsNotEmpty()
+  // @IsNotEmpty()
   signature: string;
 
   @ApiProperty({ required: false })

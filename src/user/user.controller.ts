@@ -32,4 +32,9 @@ export class UserController {
   ): Promise<User> {
     return this.userService.createOrUpdate(updateUserDto, file);
   }
+
+  @Get('all') 
+  getUsers(@Query('skip') skip: number, @Query('take') take: number) {
+    return this.userService.getUsers(skip, take);
+  }
 }

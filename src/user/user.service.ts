@@ -36,10 +36,10 @@ export class UserService {
     updateUserDto: UpdateUserDto,
     file: Express.Multer.File,
   ) {
-    this.walletService.verifySigner(
-      updateUserDto.address,
-      updateUserDto.signature,
-    );
+    // this.walletService.verifySigner(
+    //   updateUserDto.address,
+    //   updateUserDto.signature,
+    // );
     let imageUrl: string;
     if (file) {
       imageUrl = await this.uploadImageToS3(file);
@@ -83,5 +83,12 @@ export class UserService {
 
       throw new InternalServerErrorException('Failed to upload image');
     }
+  }
+
+  async getUsers(skip: number, take: number) {
+    return await this.userRepository.find({
+      skip,
+      take
+    });
   }
 }
